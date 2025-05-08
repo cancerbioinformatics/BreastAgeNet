@@ -18,11 +18,13 @@
 ## Dataset Overview
 The framework was developed and tested on WSIs of NBT resources from multiple cohorts, including the King's Health Partners Cancer Biobank (KHP) in London; the Netherlands Cancer Institute (NKI) in Amsterdam; the Barts Cancer Institute (BCI) in London; the École Polytechnique Fédérale de Lausanne (EPFL) in Lausanne, Switzerland; and the publicly available Susan G. Komen Tissue Bank (SGK).
 
-
 <p align="center">
     <img src="Docs/cohort.png" width="90%"> 
 </p>
 
+
+
+## Implementation
 
 Our data is organised as follows:
 ```
@@ -46,10 +48,6 @@ prj_BreastAgeNet/
     |── figures/
     └── ...
 ```
-
-
-## Implementation
-
 The implementation can largely be broken down into the following four steps:
 
 ### Step 1. WSI pre-processing
