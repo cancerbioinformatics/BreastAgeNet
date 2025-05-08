@@ -42,12 +42,12 @@ def Extract_features_from_patches(root, patch_csv, model, transform, stainFunc, 
     df["wsi_id"] = df["file_path"].apply(lambda x: os.path.basename(x).split("_HE")[0])
     df["patch_id"] = df["file_path"].apply(lambda x: os.path.basename(x).split(".png")[0])
     print(f"Total patches: {len(df)}")
-
+    
+    fname = f"{root}/FEATUREs/{wsi_id}/{wsi_id}_bagFeature_{model_name}_{stainFunc}.h5"
     for wsi_id, bag_df in df.groupby("wsi_id"):
         print(f"Processing WSI: {wsi_id}", flush=True)
         try:
             bag_dataset = Dataset_frompatch(bag_df, stainFunc, transform)
-            fname = f"{root}/FEATUREs/{wsi_id}/{wsi_id}_bagFeature_{model_name}_{stainFunc}_embeddings.h5"
             extract_features(model, bag_dataset, batch_size, num_workers, device, fname)
         except:
             continue
