@@ -83,10 +83,8 @@ The implementation can largely be broken down into the following four steps:
 **Step 1.1**: Feature extraction
 
 Based on the `_patch_wsi.csv` file, this step extracts visual features for each WSI via pre-trained feature extractors.
-
-For this step, implement the following code:
 ```
-python extractFeatures.py --model UNI --stain augmentation --cohort NKI
+python extractFeatures.py --model UNI --stain augmentation --root '' --image_type WSI
 ```
 
 The script supports applying models including pre-trained ResNet50, [UNI](https://huggingface.co/MahmoodLab/UNI), [prov-gigapath](https://huggingface.co/prov-gigapath/prov-gigapath) and [phikon](https://huggingface.co/owkin/phikon) and stain generalisation methods such as normalisation ([Reinhard](https://github.com/chia56028/Color-Transfer-between-Images)) and augmentation ([RandStainNA](https://github.com/yiqings/RandStainNA)).
