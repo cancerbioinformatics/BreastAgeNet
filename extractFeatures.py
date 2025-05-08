@@ -27,7 +27,7 @@ def Extract_features_from_WSIs(root, model, transform, stainFunc, batch_size, nu
                 
                 if len(bag_df) > 0:
                     try:
-                        bag_dataset = Dataset_fromWSI(bag_df, WSIs, stainFunc, transforms_eval=transform)
+                        bag_dataset = Dataset_fromWSI(bag_df, f"{root}/WSIs", stainFunc, transforms_eval=transform)
                         extract_features(model, bag_dataset, batch_size, num_workers, device, fname)
                     except:
                         continue
@@ -57,10 +57,9 @@ def Extract_features_from_patches(root, patch_csv, model, transform, stainFunc, 
 parser = argparse.ArgumentParser(description="Feature Extraction for BreastAgeNet")
 parser.add_argument("--model", type=str, default="UNI", help="Model name (e.g., 'UNI', 'ResNet50', 'gigapath', 'phikon')")
 parser.add_argument("--stain", type=str, default="augmentation", help="Staining function (e.g., 'augmentation', 'reinhard')")
+parser.add_argument("--root", type=str, default="", help="Path to the root directory")
 parser.add_argument("--image_type", type=str, choices=["WSI", "patch"], default="WSI", help="Input type: 'WSI' or 'patch'")
-parser.add_argument("--IMAGES", type=str, default="./project-data/WSIs", help="Path to WSI directory")
 parser.add_argument("--patch_csv", type=str, default="", help="when image_type is patch, patch_csv provides their tissue classification results")
-parser.add_argument("--FEATURES", type=str, default="./project-data/FEATURES", help="Path to features directory")
 parser.add_argument("--batch_size", type=int, default=16, help="Batch size for feature extraction")
 parser.add_argument("--num_workers", type=int, default=2, help="Number of workers for data loading")
 args = parser.parse_args()
@@ -68,10 +67,9 @@ args = parser.parse_args()
 
 model_name = args.model
 stainFunc = args.stain
+root = args.root
 image_type = args.image_type
-IMAGES = args.IMAGES
 patch_csv = args.patch_csv
-FEATURES = args.FEATURES
 batch_size = args.batch_size
 num_workers = args.num_workers
 
@@ -83,6 +81,6 @@ print(f"Loaded Model: {model_name} with Stain Function: {stainFunc}", flush=True
 
 
 if image_type == 'WSI':
-    Extract_features_from_WSIs(IMAGES, model, transform, stainFunc, batch_size, num_workers, device)
+    Extract_features_from_WSIs(root, model, transform, stainFunc, batch_size, num_workers, device)
 elif image_type == 'patch':
-    Extract_features_from_patches(IMAGES, args.patch_csv, model, transform, stainFunc, batch_size, num_workers, device)
+    Extract_features_from_patches(root, args.patch_csv, model, transform, stainFunc, batch_size, num_workers, device)
