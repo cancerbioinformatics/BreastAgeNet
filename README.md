@@ -24,11 +24,35 @@ The framework was developed and tested on WSIs of NBT resources from multiple co
 
 
 
-## Implementation
+## WSI pre-processing
 
-Our data is organised as follows:
+<p align="center">
+    <img src="Docs/pre-processing.png" width="90%">
+</p>
+
+
+BreastAgeNet takes refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
+
+The framework performs foreground tissue detection, patch tessellation and tissue type classification, which generates a `_patch_wsi.csv` file that contains the coordinates of patches and their tissue classification results for each slide.
+
+
+
+## BreastAgeNet implementation
+
+To get started, install BreastAgeNet under the root folder:
+```
+cd prj_BreastAgeNet
+git clone https://github.com/cancerbioinformatics/BreastAgeNet.git
+
+cd prj_BreastAgeNet/
+conda env create -f environment.yml
+conda activate breastagenet
+```
+
+The data is organised as follows:
 ```
 prj_BreastAgeNet/
+├── BreastAgeNet/
 ├── Metadata/
 │   ├── train_NR.csv
 │   ├── test_NR.csv
@@ -39,7 +63,11 @@ prj_BreastAgeNet/
 │   ├── NKI/slide1.mrxs, ...
 │   ├── BCI/slide1.ndpi, ...
 │   └── EPFL/slide1.vsi, ...
-├── FEATUREs/
+├── FEATUREs/SGK
+│   ├──slide1
+│   |   ├── slide1_TC_512_patch_wsi.csv
+│   |   └── ...
+│   └── ...
 └── RESULTs/
     |── main/
     │   ├── train_cv/
@@ -48,35 +76,15 @@ prj_BreastAgeNet/
     |── figures/
     └── ...
 ```
+
+
 The implementation can largely be broken down into the following four steps:
 
-### Step 1. WSI pre-processing
+**Step 1.1**: Feature extraction
 
-<p align="center">
-    <img src="Docs/pre-processing.png" width="90%">
-</p>
+Based on the `_patch_wsi.csv` file, this step extracts visual features for each WSI via pre-trained feature extractors.
 
-**Step 1.1**: Tessellation and tissue classification
-This step will perform foreground tissue detection, patch tessellation and tissue type classification. For more details, please check our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier). For each WSI, the pipeline generates a `_patch_wsi.csv` file that contains the coordinates of patches and their tissue classification results.
-
-This step yields:
-```
-prj_BreastAgeNet/
-├── Metadata/
-├── WSIs/
-├── FEATUREs/cohort
-│   ├──slide1
-│   |   ├── slide1_TC_512_patch_wsi.csv
-│   |   └── ...
-│   └── ...
-└── RESULTs/
-```
-
-**Step 1.2**: Feature extraction of selected patches
-
-Leveraging pre-trained feature extractors, this step extracts visual features for each WSI based on the `_patch_wsi.csv` file.  
-
-For this step, implement the following:
+For this step, implement the following code:
 ```
 python extractFeatures.py --model UNI --stain augmentation --cohort NKI
 ```
@@ -103,7 +111,8 @@ prj_BreastAgeNet/
 └── RESULTs/
 ```
 
-**Step 1.3**: clean data
+
+**Step 1.2**: clean data
 This step further cleans the data by removing invalid slides that either failed to obtain features or contain epithelium patches (with a confidence higher than 0.9) less than 5. For detailed implementation, please refer to [notebook clean_data](notebooks/clean_data.ipynb).
 
 
