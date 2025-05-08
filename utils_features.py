@@ -216,12 +216,10 @@ class Dataset_fromWSI(Dataset):
         self.transforms = transforms_eval   
         self.stainFunc = stainFunc
 
-    def __getwsi__(self, wsi_id):
-        wsi_pt = glob.glob(f"{self.WSIs}/*/{wsi_id}*.*")
+    def _get_wsi(self, wsi_id):
+        wsi_pt = glob.glob(f"{self.WSIs}/**/{wsi_id}*.*", recursive=True)
         if not wsi_pt:
-            wsi_pt = glob.glob(f"{self.WSIs}/*/*/{wsi_id}*.*")
-        if not wsi_pt:
-            raise FileNotFoundError(f"WSI file for {wsi_id} not found in {self.WSIs} or subdirectories.")
+            raise FileNotFoundError(f"WSI file for '{wsi_id}' not found in '{self.WSIs}' or subdirectories.")
         self.wsi = openslide.OpenSlide(wsi_pt[0])
     
     def __getxy__(self, patch_id):
