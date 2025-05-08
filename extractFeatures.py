@@ -8,17 +8,17 @@ from utils_features import *
 
 
 
-def Extract_features_from_WSIs(root, model, transform, stainFunc, batch_size, num_workers, device):
+def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch_size, num_workers, device):
     """Extract features from WSIs (e.g., '.ndpi' files)."""
     
-    wsinames = os.listdir(f'{root}/WSIs')
+    wsinames = os.listdir(f'{root}/WSIs/{dataset}')
     for wsi_id in wsinames:
-        output_dir = f"{root}/FEATUREs/{wsi_id}"
+        output_dir = f"{root}/FEATUREs/{dataset}/{wsi_id}"
         fname = f"{output_dir}/{wsi_id}_bagFeature_{model_name}_{stainFunc}.h5"
         
         if not os.path.exists(fname):
             print(f"Processing WSI: {wsi_id}", flush=True)
-            file = glob.glob(f"{root}/FEATUREs/{wsi_id}/{wsi_id}*_TC_512_patch_wsi.csv")
+            file = glob.glob(f"{root}/FEATUREs/{dataset}/{wsi_id}/{wsi_id}*_TC_512_patch_wsi.csv")
             
             if file:
                 print(f"Found CSV file: {file[0]}")
@@ -27,7 +27,7 @@ def Extract_features_from_WSIs(root, model, transform, stainFunc, batch_size, nu
                 
                 if len(bag_df) > 0:
                     try:
-                        bag_dataset = Dataset_fromWSI(bag_df, f"{root}/WSIs", stainFunc, transforms_eval=transform)
+                        bag_dataset = Dataset_fromWSI(bag_df, f"{root}/WSIs/{dataset}", stainFunc, transforms_eval=transform)
                         extract_features(model, bag_dataset, batch_size, num_workers, device, fname)
                     except:
                         continue
@@ -58,6 +58,7 @@ parser = argparse.ArgumentParser(description="Feature Extraction for BreastAgeNe
 parser.add_argument("--model", type=str, default="UNI", help="Model name (e.g., 'UNI', 'ResNet50', 'gigapath', 'phikon')")
 parser.add_argument("--stain", type=str, default="augmentation", help="Staining function (e.g., 'augmentation', 'reinhard')")
 parser.add_argument("--root", type=str, default="", help="Path to the root directory")
+parser.add_argument("--dataset", type=str, default="", help="")
 parser.add_argument("--image_type", type=str, choices=["WSI", "patch"], default="WSI", help="Input type: 'WSI' or 'patch'")
 parser.add_argument("--patch_csv", type=str, default="", help="when image_type is patch, patch_csv provides their tissue classification results")
 parser.add_argument("--batch_size", type=int, default=16, help="Batch size for feature extraction")
@@ -68,6 +69,7 @@ args = parser.parse_args()
 model_name = args.model
 stainFunc = args.stain
 root = args.root
+root = args.dataset
 image_type = args.image_type
 patch_csv = args.patch_csv
 batch_size = args.batch_size
@@ -81,6 +83,7 @@ print(f"Loaded Model: {model_name} with Stain Function: {stainFunc}", flush=True
 
 
 if image_type == 'WSI':
-    Extract_features_from_WSIs(root, model, transform, stainFunc, batch_size, num_workers, device)
+    Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch_size, num_workers, device)
+
 elif image_type == 'patch':
     Extract_features_from_patches(root, args.patch_csv, model, transform, stainFunc, batch_size, num_workers, device)
