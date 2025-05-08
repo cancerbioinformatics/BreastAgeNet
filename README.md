@@ -39,6 +39,12 @@ prj_BreastAgeNet/
 │   └── EPFL/slide1.vsi, ...
 ├── FEATUREs/
 └── RESULTs/
+    |── main/
+    │   ├── train_cv/
+    │   ├── train_full/
+    │   └── test_full/
+    |── figures/
+    └── ...
 ```
 
 
@@ -62,12 +68,6 @@ prj_BreastAgeNet/
 │   |   └── ...
 │   └── ...
 └── RESULTs/
-    |── main/
-    │   ├── train_cv/
-    │   ├── train_full/
-    │   └── test_full/
-    |── figures/
-    └── ...
 ```
 
 **Step 1.2**: Feature extraction of selected patches
