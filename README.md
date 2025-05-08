@@ -6,7 +6,7 @@
 
 
 
-## **_BreastAgeNet_** Walkthrough
+## **_BreastAgeNet_** architecture
 
 **_BreastAgeNet_** is a computational pathology (CPath) framework, incorporating a multi-branch multiple-instance learning (MIL) architecture to capture ordinal age-related histological alterations and designed to predict tissue ageing ranks in NBT from WSI. 
 
@@ -53,6 +53,10 @@ prj_BreastAgeNet/
 The implementation can largely be broken down into the following four steps:
 
 ### Step 1. WSI pre-processing
+
+<p align="center">
+    <img src="Docs/pre-processing.png" width="90%">
+</p>
 
 **Step 1.1**: Tessellation and tissue classification
 This step will perform foreground tissue detection, patch tessellation and tissue type classification. For more details, please check our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier). For each WSI, the pipeline generates a `_patch_wsi.csv` file that contains the coordinates of patches and their tissue classification results.
