@@ -8,17 +8,17 @@ from utils_features import *
 
 
 
-def Extract_features_from_WSIs(folder, model, transform, stainFunc, batch_size, num_workers, device):
+def Extract_features_from_WSIs(root, model, transform, stainFunc, batch_size, num_workers, device):
     """Extract features from WSIs (e.g., '.ndpi' files)."""
     
-    wsinames = os.listdir(f'{folder}/WSIs')
+    wsinames = os.listdir(f'{root}/WSIs')
     for wsi_id in wsinames:
-        output_dir = f"{folder}/FEATUREs/{wsi_id}"
+        output_dir = f"{root}/FEATUREs/{wsi_id}"
         fname = f"{output_dir}/{wsi_id}_bagFeature_{model_name}_{stainFunc}.h5"
         
         if not os.path.exists(fname):
             print(f"Processing WSI: {wsi_id}", flush=True)
-            file = glob.glob(f"{folder}/FEATUREs/{wsi_id}/{wsi_id}*_TC_512_All.csv")
+            file = glob.glob(f"{root}/FEATUREs/{wsi_id}/{wsi_id}*_TC_512_patch_wsi.csv")
             
             if file:
                 print(f"Found CSV file: {file[0]}")
@@ -35,8 +35,9 @@ def Extract_features_from_WSIs(folder, model, transform, stainFunc, batch_size, 
 
 
 
-def Extract_features_from_patches(folder, patch_csv, model, transform, stainFunc, batch_size, num_workers, device):
+def Extract_features_from_patches(root, patch_csv, model, transform, stainFunc, batch_size, num_workers, device):
     """Extract features from individual patch images (e.g., '.png' files)."""
+    
     df = pd.read_csv(patch_csv) # "/scratch_tmp/prj/cb_normalbreast/prj_NBTClassifier/TC512_externaltesting_EPFL.csv"
     df["wsi_id"] = df["file_path"].apply(lambda x: os.path.basename(x).split("_HE")[0])
     df["patch_id"] = df["file_path"].apply(lambda x: os.path.basename(x).split(".png")[0])
@@ -46,7 +47,7 @@ def Extract_features_from_patches(folder, patch_csv, model, transform, stainFunc
         print(f"Processing WSI: {wsi_id}", flush=True)
         try:
             bag_dataset = Dataset_frompatch(bag_df, stainFunc, transform)
-            fname = f"{folder}/FEATUREs/{wsi_id}/{wsi_id}_bagFeature_{model_name}_{stainFunc}_embeddings.h5"
+            fname = f"{root}/FEATUREs/{wsi_id}/{wsi_id}_bagFeature_{model_name}_{stainFunc}_embeddings.h5"
             extract_features(model, bag_dataset, batch_size, num_workers, device, fname)
         except:
             continue
