@@ -26,7 +26,6 @@ from vision_transformer import vit_base
 from transformers import AutoModel
 from huggingface_hub import login, hf_hub_download
 # login()
-custom_path ='/scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet/BreastAgeNet/weights'
 
 sys.path.append('../RandStainNA')
 from randstainna import RandStainNA
@@ -62,6 +61,7 @@ def eval_transforms(pretrained=False):
 
 
 def get_model(model_name, device):
+    custom_path ='./weights'
     if model_name == "resnet50":
         resnet50 = models.resnet50(pretrained=True)
         # Remove the final fully connected layer
