@@ -23,15 +23,13 @@ from transformers import AutoImageProcessor, ViTModel
 import timm
 import vision_transformer as vits
 from vision_transformer import vit_base
-from conch.open_clip_custom import create_model_from_pretrained
+from transformers import AutoModel
 from huggingface_hub import login, hf_hub_download
+# login()
+custom_path ='/scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet/BreastAgeNet/weights'
 
-sys.path.append('/scratch_tmp/users/k21066795/RandStainNA')
+sys.path.append('../RandStainNA')
 from randstainna import RandStainNA
-
-sys.path.append('/scratch_tmp/users/k21066795')
-from EXAONEPath.vision_transformer import VisionTransformer
-from EXAONEPath.macenko import macenko_normalizer
 
 torch.multiprocessing.set_sharing_strategy('file_system')
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -39,7 +37,7 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 
 def Reinhard(img_arr):
-    standard_img = "/scratch_tmp/users/k21066795/NBT-Classifier/data/he.jpg"
+    standard_img = "./data/he.jpg"
     target = staintools.read_image(standard_img)
     target = staintools.LuminosityStandardizer.standardize(target)
     normalizer = staintools.ReinhardColorNormalizer()
@@ -76,62 +74,11 @@ def get_model(model_name, device):
             pth_transforms.ToTensor(),                 
             pth_transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ])
-
-    elif model_name == "conch":
-        model, transform = create_model_from_pretrained('conch_ViT-B-16', "hf_hub:MahmoodLab/conch", 
-                                                 hf_auth_token="")
-    
-    elif model_name == "DINO_BRCA":
-        # https://github.com/Richarizardd/Self-Supervised-ViT-Path.git
-        # model configuration
-        arch = 'vit_small'
-        image_size=(256,256)
-        pretrained_weights = '/scratch/users/k21066795/prj_normal/ckpts/vits_tcga_brca_dino.pt'
-        checkpoint_key = 'teacher'
-        # get model
-        model = vits.__dict__[arch](patch_size=16, num_classes=0)
-        for p in model.parameters():
-            p.requires_grad = False
-
-        transform = pth_transforms.Compose([
-            pth_transforms.Resize(image_size),
-            pth_transforms.ToTensor(),
-            pth_transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-        ])
-
-    elif model_name == "HIPT256":
-        # https://github.com/mahmoodlab/HIPT.git
-        pretrained_weights = '/scratch/users/k21066795/prj_normal/ckpts/vit256_small_dino.pth'
-        checkpoint_key = 'teacher'
-        arch = 'vit_small'
-        image_size=(256,256)
-        model256 = vits.__dict__[arch](patch_size=16, num_classes=0)
-        for p in model256.parameters():
-            p.requires_grad = False
-        state_dict = torch.load(pretrained_weights, map_location="cpu")
-        if checkpoint_key is not None and checkpoint_key in state_dict:
-            print(f"Take key {checkpoint_key} in provided checkpoint dict")
-            state_dict = state_dict[checkpoint_key]
-        # remove `module.` prefix
-        state_dict = {k.replace("module.", ""): v for k, v in state_dict.items()}
-        # remove `backbone.` prefix induced by multicrop wrapper
-        state_dict = {k.replace("backbone.", ""): v for k, v in state_dict.items()}
-        msg = model256.load_state_dict(state_dict, strict=False)
-        print('Pretrained weights found at {} and loaded with msg: {}'.format(pretrained_weights, msg))
-        model = model256
-
-        transform = pth_transforms.Compose([
-            pth_transforms.Resize(image_size),
-            pth_transforms.ToTensor(),
-            pth_transforms.Normalize(
-                [0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
     
     elif model_name == "phikon":
-        # https://github.com/owkin/HistoSSLscaling.git
-        model = ViTModel.from_pretrained("owkin/phikon", add_pooling_layer=False)
-
-        image_size = (224, 224)
+        model = ViTModel.from_pretrained("owkin/phikon", cache_dir=custom_path, add_pooling_layer=False)
         image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
+        
         normalize = pth_transforms.Normalize(
             mean=image_processor.image_mean,
             std=image_processor.image_std)
@@ -142,29 +89,31 @@ def get_model(model_name, device):
             pth_transforms.ToTensor(),
             normalize])
 
-    elif model_name == "UNI":
-        model = timm.create_model("hf-hub:MahmoodLab/uni", pretrained=True, init_values=1e-5, dynamic_img_size=True)
-        # transform = create_transform(**resolve_data_config(model.pretrained_cfg, model=model))
 
-        # local_dir = "/scratch/prj/cb_normalbreast/Siyuan/prj_normal/BreastAgeNet/ckpts/UNI"
+    elif model_name == "UNI":
+        # local_dir = f"{custom_path}/UNI"
         # os.makedirs(local_dir, exist_ok=True)  # create directory if it does not exist
         # hf_hub_download("MahmoodLab/UNI", filename="pytorch_model.bin", local_dir=local_dir, force_download=True)
-        # model = timm.create_model(
-        #     "vit_large_patch16_224", img_size=224, patch_size=16, init_values=1e-5, num_classes=0, dynamic_img_size=True
-        # )
-        # model.load_state_dict(torch.load(os.path.join(local_dir, "pytorch_model.bin"), map_location="cpu"), strict=True)
+        model = timm.create_model(
+            "vit_large_patch16_224", img_size=224, patch_size=16, init_values=1e-5, num_classes=0, dynamic_img_size=True
+        )
+        model.load_state_dict(torch.load(os.path.join(custom_path, 'UNI', "pytorch_model.bin"), map_location="cpu"), strict=True)
+        
         transform = pth_transforms.Compose(
             [pth_transforms.Resize((256,256)),
              pth_transforms.CenterCrop((224, 224)),
-             # pth_transforms.Resize(224),
              pth_transforms.ToTensor(),
              pth_transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             ]
         )
 
     elif model_name == "gigapath":
-        model = timm.create_model("hf_hub:prov-gigapath/prov-gigapath", pretrained=True)
-    
+        # local_dir = f"{custom_path}/gigapath"
+        # os.makedirs(local_dir, exist_ok=True)  # create directory if it does not exist
+        # hf_hub_download("prov-gigapath/prov-gigapath", filename="pytorch_model.bin", local_dir=local_dir, force_download=True)
+        model = timm.create_model("hf_hub:prov-gigapath/prov-gigapath", pretrained=False)
+        model.load_state_dict(torch.load(os.path.join(custom_path, 'gigapath', "pytorch_model.bin"), map_location="cpu"), strict=True)
+
         transform = pth_transforms.Compose(
             [
                 pth_transforms.Resize(256, interpolation=pth_transforms.InterpolationMode.BICUBIC),
@@ -173,33 +122,6 @@ def get_model(model_name, device):
                 pth_transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
             ]
         )
-
-    # elif model_name == "ctranspath":
-    #     # https://github.com/Xiyue-Wang/TransPath/blob/main/get_features_CTransPath.py 
-    #     model = ctranspath()
-    #     model.head = nn.Identity()
-    #     td = torch.load(r'/scratch/users/k21066795/prj_normal/awesome_normal_breast/ckpts/ctranspath.pth')
-    #     model.load_state_dict(td['model'], strict=True)
-
-    #     mean = (0.485, 0.456, 0.406)
-    #     std = (0.229, 0.224, 0.225)
-    #     transform = pth_transforms.Compose([
-    #         pth_transforms.Resize(224),
-    #         pth_transforms.ToTensor(),
-    #         pth_transforms.Normalize(mean = mean, std = std)])
-
-    elif model_name == "EXAONEPath":
-        hf_token = ""
-        model = VisionTransformer.from_pretrained("LGAI-EXAONE/EXAONEPath", use_auth_token=hf_token)
-        transform = pth_transforms.Compose(
-            [
-                pth_transforms.Resize(256, interpolation=transforms.InterpolationMode.BICUBIC),
-                pth_transforms.CenterCrop(224),
-                pth_transforms.ToTensor(),
-                pth_transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
-            ]
-        )
-        
 
     model.eval()
     model.to(device)
