@@ -6,6 +6,17 @@ import argparse
 import pandas as pd
 from utils_features import *
 
+root='/scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet/examples'
+dataset='KHP_RM'
+model_name = 'UNI'
+stainFunc = 'augmentation'
+batch_size = 16
+num_workers = 2
+
+device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+print(f"Using device: {device}", flush=True)
+model, transform = get_model(model_name, device)
+print(f"Loaded Model: {model_name} with Stain Function: {stainFunc}", flush=True)
 
 
 def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch_size, num_workers, device):
@@ -20,7 +31,7 @@ def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch
         if not os.path.exists(fname):
             print(f"Processing WSI: {wsi_id}", flush=True)
             file = glob.glob(f"{root}/FEATUREs/{dataset}/{wsi_id}/{wsi_id}*_TC_512_patch_all.csv")
-            
+                
             if file:
                 print(f"Found CSV file: {file[0]}")
                 bag_df = pd.read_csv(file[0])
