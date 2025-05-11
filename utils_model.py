@@ -249,6 +249,8 @@ def get_data(clinic_path, FEATURES, model_name, stainFunc, TC_epi):
     return clinic_df, valid_patches
 
 
+
+
 def split_data_per_fold(clinic_df, patientID, truelabels, train_index, test_index, stainFunc):
     print('Preparing train/test patients, 80/20 split')
     test_patients = patientID[test_index]
