@@ -666,7 +666,14 @@ def train_cv(config):
         dls = dblock.dataloaders(train_df, bs = config["batch_size"])
         trainLoaders = dls.train
         valLoaders = dls.valid
+        print('test trainLoaders...')
         (patch_ids, embeds), labels = next(iter(trainLoaders))
+        patch_ids = np.array(patch_ids)  
+        patch_ids = np.transpose(patch_ids)  
+        print(patch_ids.shape, embeds.shape, labels.shape)
+
+        print('test valLoaders...')
+        (patch_ids, embeds), labels = next(iter(valLoaders))
         patch_ids = np.array(patch_ids)  
         patch_ids = np.transpose(patch_ids)  
         print(patch_ids.shape, embeds.shape, labels.shape)
