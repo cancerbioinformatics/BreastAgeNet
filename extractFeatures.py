@@ -18,7 +18,7 @@ def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch
         
         if not os.path.exists(fname):
             print(f"Processing WSI: {wsi_id}", flush=True)
-            file = glob.glob(f"{root}/FEATUREs/{dataset}/{wsi_id}/{wsi_id}*_TC_512_patch_wsi.csv")
+            file = glob.glob(f"{root}/FEATUREs/{dataset}/{wsi_id}/{wsi_id}*_TC_512_patch_all.csv")
             
             if file:
                 print(f"Found CSV file: {file[0]}")
