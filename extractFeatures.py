@@ -12,7 +12,8 @@ def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch
     """Extract features from WSIs (e.g., '.ndpi' files)."""
     
     wsinames = os.listdir(f'{root}/WSIs/{dataset}')
-    for wsi_id in wsinames:
+    wsi_ids = [i.split('.')[0] for i in wsinames]
+    for wsi_id in wsi_ids:
         output_dir = f"{root}/FEATUREs/{dataset}/{wsi_id}"
         fname = f"{output_dir}/{wsi_id}_bagFeature_{model_name}_{stainFunc}.h5"
         
