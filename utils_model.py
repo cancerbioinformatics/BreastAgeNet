@@ -725,7 +725,7 @@ def train_cv(config):
         # save results
         save_pt = ckpt_name.replace("_best.pt", f"_TrainValLoss_TestMAE_{np.round(MAE, 4)}.png")
         plot_training(train_loss_history, val_loss_history, train_mae_history, val_mae_history, save_pt)
-
+        print(f"{save_pt} saved!")
 
 
 
@@ -814,7 +814,6 @@ def train_full(config):
     time_elapsed = time.time() - since
     print(f'Training completed in {time_elapsed // 60:.0f}m {time_elapsed % 60:.0f}s')
 
-    
     # save results
     save_pt = ckpt_name.replace("_best.pt", f"_TrainValLoss.png")
     plot_training(train_loss_history, val_loss_history, train_mae_history, val_mae_history, save_pt)
@@ -903,8 +902,12 @@ def test_full(config):
     repeats = test_model_iterations(model, testloaders, n_iteration = 10)
     df = pd.read_csv(config['clinic_path'])
     repeats = pd.merge(df, repeats, on="wsi_id", how="right")
-    save_pt = f"{config['resFolder']}/{config['task']}/{os.path.basename(config['clinic_path']).split('.csv')[0]}_10repeats.csv"
+
+    output_dir = f'{config["resFolder"]}/{config["task"]}'
+    os.makedirs(output_dir, exist_ok=True)
+    save_pt = f"{output_dir}/{os.path.basename(config['clinic_path']).split('.csv')[0]}_10repeats.csv"
     repeats.to_csv(save_pt, index=False)
+    print(f"{save_pt} saved!")
 
 
 
