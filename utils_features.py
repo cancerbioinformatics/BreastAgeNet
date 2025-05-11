@@ -138,7 +138,7 @@ class Dataset_fromWSI(Dataset):
         self.transforms = transforms_eval   
         self.stainFunc = stainFunc
 
-    def _get_wsi(self, wsi_id):
+    def __getwsi__(self, wsi_id):
         wsi_pt = glob.glob(f"{self.WSIs}/**/{wsi_id}*.*", recursive=True)
         if not wsi_pt:
             raise FileNotFoundError(f"WSI file for '{wsi_id}' not found in '{self.WSIs}' or subdirectories.")
