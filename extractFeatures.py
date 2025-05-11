@@ -6,17 +6,10 @@ import argparse
 import pandas as pd
 from utils_features import *
 
-root='/scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet/examples'
-dataset='KHP_RM'
-model_name = 'UNI'
-stainFunc = 'augmentation'
-batch_size = 16
-num_workers = 2
+import torch
+import torch.nn as nn
+from torch.nn.parallel import DistributedDataParallel as DDP
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-print(f"Using device: {device}", flush=True)
-model, transform = get_model(model_name, device)
-print(f"Loaded Model: {model_name} with Stain Function: {stainFunc}", flush=True)
 
 
 def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch_size, num_workers, device):
@@ -24,16 +17,20 @@ def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch
     
     wsinames = os.listdir(f'{root}/WSIs/{dataset}')
     wsi_ids = [i.split('.')[0] for i in wsinames]
+    
     for wsi_id in wsi_ids:
         output_dir = f"{root}/FEATUREs/{dataset}/{wsi_id}"
         fname = f"{output_dir}/{wsi_id}_bagFeature_{model_name}_{stainFunc}.h5"
+        
         if not os.path.exists(fname):
             print(f"Processing WSI: {wsi_id}", flush=True)
             file = glob.glob(f"{root}/FEATUREs/{dataset}/{wsi_id}/{wsi_id}*_TC_512_patch_all.csv")
+            
             if file:
                 print(f"Found CSV file: {file[0]}")
                 bag_df = pd.read_csv(file[0])
                 print(f"Number of patches: {len(bag_df)}")
+                
                 if len(bag_df) > 0:
                     try:
                         bag_dataset = Dataset_fromWSI(bag_df, f"{root}/WSIs/{dataset}", stainFunc, transforms_eval=transform)
@@ -78,17 +75,30 @@ args = parser.parse_args()
 model_name = args.model
 stainFunc = args.stain
 root = args.root
-root = args.dataset
+dataset = args.dataset
 image_type = args.image_type
 patch_csv = args.patch_csv
 batch_size = args.batch_size
 num_workers = args.num_workers
+use_ddp = 'RANK' in os.environ and 'WORLD_SIZE' in os.environ
 
 
-device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
+if use_ddp:
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    torch.distributed.init_process_group(backend='nccl', init_method='env://')
+else:
+    local_rank = 0  # default for single-GPU
+
+
+device = torch.device(f"cuda:{local_rank}" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}", flush=True)
+
+
 model, transform = get_model(model_name, device)
 print(f"Loaded Model: {model_name} with Stain Function: {stainFunc}", flush=True)
+model = model.to(device)
+if use_ddp:
+    model = DDP(model, device_ids=[local_rank])
 
 
 if image_type == 'WSI':
