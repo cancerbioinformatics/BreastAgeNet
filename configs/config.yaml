@@ -4,7 +4,7 @@ TC_epi: 0.9
 bag_size: 250
 model_name: "UNI"
 attention: "MultiHeadAttention"
-resFolder: "/scratch/prj/cb_normalbreast/prj_BreastAgeNet/main"
+resFolder: "/scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet/examples/RESULTs/main"
 
 WSIs: "/scratch/prj/cb_normalbreast/prj_BreastAgeNet/WSIs"
 FEATURES: "/scratch/prj/cb_normalbreast/prj_BreastAgeNet/FEATURES"
