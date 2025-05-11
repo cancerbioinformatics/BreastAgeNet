@@ -161,17 +161,14 @@ class Dataset_fromWSI(Dataset):
        
         elif self.stainFunc == 'augmentation':
             augmentor = RandStainNA(
-                yaml_file = '/scratch_tmp/users/k21066795/RandStainNA/CRC_LAB_randomTrue_n0.yaml',
+                yaml_file = '../RandStainNA/CRC_LAB_randomTrue_n0.yaml',
                 std_hyper = 0.0,
                 distribution = 'normal',
                 probability = 1.0,
                 is_train = True) # is_train:True——> img is RGB format
             patch_im = Image.fromarray(augmentor(patch_im))
             
-        elif self.stainFunc== "Macenko":
-            normalizer = macenko_normalizer(target_path = '/scratch_tmp/users/k21066795/EXAONEPath/macenko_target/target_TCGA-55-A48X_coords_[19440  9824]_[4096 4096].png')
-            patch_im = normalizer(patch_im)
-        
+
         elif self.stainFunc == 'raw':
             patch_im = Image.fromarray(np.array(patch_im))
             
