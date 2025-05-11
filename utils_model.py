@@ -666,6 +666,7 @@ def train_cv(config):
         dls = dblock.dataloaders(train_df, bs = config["batch_size"])
         trainLoaders = dls.train
         valLoaders = dls.valid
+        
         print('test trainLoaders...')
         (patch_ids, embeds), labels = next(iter(trainLoaders))
         patch_ids = np.array(patch_ids)  
@@ -733,7 +734,7 @@ def train_full(config):
 
     # get data
     train_df, valid_patches = get_data(config['clinic_path'], config['FEATURES'], config['model_name'], config['stainFunc'], config['TC_epi']) 
-    train_data['h5df'] = train_data['h5df'].apply(lambda x: Path(str(x).replace('reinhard', 'augmentation')))
+    train_df['h5df'] = train_df['h5df'].apply(lambda x: Path(str(x).replace('reinhard', 'augmentation')))
 
     # data split
     train_ids, valid_ids = train_test_split(
@@ -760,11 +761,18 @@ def train_full(config):
     dls = dblock.dataloaders(train_df, bs = config["batch_size"])
     trainLoaders = dls.train
     valLoaders = dls.valid
+
+    print('test trainLoaders...')
     (patch_ids, embeds), labels = next(iter(trainLoaders))
     patch_ids = np.array(patch_ids)  
     patch_ids = np.transpose(patch_ids)  
     print(patch_ids.shape, embeds.shape, labels.shape)
 
+    print('test valLoaders...')
+    (patch_ids, embeds), labels = next(iter(valLoaders))
+    patch_ids = np.array(patch_ids)  
+    patch_ids = np.transpose(patch_ids)  
+    print(patch_ids.shape, embeds.shape, labels.shape)
     
     # get model
     input_dim = get_input_dim(config["model_name"])
