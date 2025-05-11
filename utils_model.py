@@ -220,7 +220,7 @@ def get_data(clinic_path, FEATURES, model_name, stainFunc, TC_epi):
         bag_df.index = img_id
 
         # Load corresponding CSV file with patch info
-        csv_files = glob.glob(f"{fea_pt.split('_bagFeature_')[0]}*patch.csv")
+        csv_files = glob.glob(f"{fea_pt.split('_bagFeature_')[0]}*patch_all.csv")
         if not csv_files:
             print(f"⚠️ No patch info CSV found for {fea_pt}, skipping.")
             continue
