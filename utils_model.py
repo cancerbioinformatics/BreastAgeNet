@@ -699,7 +699,10 @@ def train_cv(config):
             
         # training loops
         since = time.time()
-        ckpt_name = f'{config["resFolder"]}/{config["task"]}/epi{config["TC_epi"]}_{config["model_name"]}_{config["bag_size"]}_{config["attention"]}_fold{foldcounter}_best.pt'
+        output_dir = f'{config["resFolder"]}/{config["task"]}'
+        os.makedirs(output_dir, exist_ok=True)
+        ckpt_name = f'{output_dir}/epi{config["TC_epi"]}_{config["model_name"]}_{config["bag_size"]}_{config["attention"]}_fold{foldcounter}_best.pt'
+
         for epoch in range(config["max_epochs"]):
             print(f'Epoch {epoch}/{config["max_epochs"]-1}\n')
             early_stop = run_one_epoch(
@@ -794,7 +797,10 @@ def train_full(config):
     
     # training loops
     since = time.time()
-    ckpt_name = f'{config["resFolder"]}/{config["task"]}/epi{config["TC_epi"]}_{config["model_name"]}_{config["bag_size"]}_{config["attention"]}_full_best.pt'
+    output_dir = f'{config["resFolder"]}/{config["task"]}'
+    os.makedirs(output_dir, exist_ok=True)
+    ckpt_name = f'{output_dir}/epi{config["TC_epi"]}_{config["model_name"]}_{config["bag_size"]}_{config["attention"]}_full_best.pt'
+
     for epoch in range(config["max_epochs"]):
         print(f'Epoch {epoch}/{config["max_epochs"]-1}\n')
         early_stop = run_one_epoch(
