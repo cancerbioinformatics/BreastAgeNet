@@ -12,6 +12,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 
+
 def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch_size, num_workers, device):
     """Extract features from WSIs (e.g., '.ndpi' files)."""
     
@@ -44,7 +45,7 @@ def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch
 def Extract_features_from_patches(root, patch_csv, model, transform, stainFunc, batch_size, num_workers, device):
     """Extract features from individual patch images (e.g., '.png' files)."""
     
-    df = pd.read_csv(patch_csv) # "/scratch_tmp/prj/cb_normalbreast/prj_NBTClassifier/TC512_externaltesting_EPFL.csv"
+    df = pd.read_csv(patch_csv)       # "/scratch_tmp/prj/cb_normalbreast/prj_NBTClassifier/TC512_externaltesting_EPFL.csv"
     df["wsi_id"] = df["file_path"].apply(lambda x: os.path.basename(x).split("_HE")[0])
     df["patch_id"] = df["file_path"].apply(lambda x: os.path.basename(x).split(".png")[0])
     print(f"Total patches: {len(df)}")
@@ -89,9 +90,9 @@ if use_ddp:
 else:
     local_rank = 0  # default for single-GPU
 
-
 device = torch.device(f"cuda:{local_rank}" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}", flush=True)
+
 
 
 model, transform = get_model(model_name, device)
@@ -99,6 +100,7 @@ print(f"Loaded Model: {model_name} with Stain Function: {stainFunc}", flush=True
 model = model.to(device)
 if use_ddp:
     model = DDP(model, device_ids=[local_rank])
+
 
 
 if image_type == 'WSI':
