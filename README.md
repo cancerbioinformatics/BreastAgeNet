@@ -6,7 +6,7 @@
 
 
 
-## **_BreastAgeNet_** architecture
+## 1. **_BreastAgeNet_** architecture
 
 **_BreastAgeNet_** is a computational pathology (CPath) framework, incorporating a multi-branch multiple-instance learning (MIL) architecture to capture ordinal age-related histological alterations and designed to predict tissue ageing ranks in NBT from WSI. 
 
@@ -15,7 +15,7 @@
 </p>
 
 
-## Dataset Overview
+## 2. Dataset Overview
 The framework was developed and tested on WSIs of NBT resources from multiple cohorts, including the King's Health Partners Cancer Biobank (KHP) in London; the Netherlands Cancer Institute (NKI) in Amsterdam; the Barts Cancer Institute (BCI) in London; the École Polytechnique Fédérale de Lausanne (EPFL) in Lausanne, Switzerland; and the publicly available Susan G. Komen Tissue Bank (SGK).
 
 <p align="center">
@@ -41,14 +41,30 @@ The data is organised under the `root` directory as follows:
 ```
 
 
-## WSI pre-processing
+## 3. [Docker](https://hub.docker.com/repository/docker/siyuan726/breastagenet/general)
+
+BreastAgeNet supports Docker for reproducing the main figures and analysing tissue ageing ranks of user histology data. 
+
+To get the Docker image:
+```
+docker pull siyuan726/breastagenet:latest
+```
+
+or use singularity for HPC:
+```
+singularity pull docker://siyuan726/breastagenet:latest
+```
+
+
+
+## 3. WSI pre-processing
 
 <p align="center">
     <img src="Docs/pre-processing.png" width="90%">
 </p>
 
 
-BreastAgeNet takes refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
+BreastAgeNet takes a refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
 
 The framework performs foreground tissue detection, patch tessellation and tissue type classification, which generates a `_patch_all.csv` file that contains the coordinates of patches and their tissue classification results for each slide.
 
@@ -66,7 +82,13 @@ This step yields:
 ```
 
 
-## BreastAgeNet implementation
+## 4. _BreastAgeNet_ implementation
+
+The implementation can largely be broken down into the following four steps:
+- Feature extraction
+-  _BreastAgeNet_ training
+- _BreastAgeNet_ testing
+- Visualisation
 
 To get started, install BreastAgeNet under the root folder:
 ```
@@ -78,13 +100,16 @@ conda env create -f environment.yml
 conda activate breastagenet
 ```
 
-The implementation can largely be broken down into the following four steps:
 
-**Step 1.1**: Feature extraction
+### 4.1 Feature extraction
 
-Based on the `_patch_all.csv` file that containing the patch information, this step randomly selects target patches to form the input bag and extracts visual features for them via pre-trained feature extractors. For example:
+Based on the `_patch_all.csv` file that contains the patch information, this step randomly selects target patches to form the input bag and extracts visual features for them via pre-trained feature extractors.
 
-### Single-GPU: extract features from WSI files
+The script supports applying pre-trained feature extractors including pre-trained ResNet50, [UNI](https://huggingface.co/MahmoodLab/UNI), [prov-gigapath](https://huggingface.co/prov-gigapath/prov-gigapath) and [phikon](https://huggingface.co/owkin/phikon);
+and stain generalisation methods including normalisation ([Reinhard](https://github.com/chia56028/Color-Transfer-between-Images)) and augmentation ([RandStainNA](https://github.com/yiqings/RandStainNA)).
+
+
+The following script shows an example of extracting features from WSI files using a single GPU: 
 ```
 export CUDA_VISIBLE_DEVICES=0
 python extractFeatures.py \
@@ -97,7 +122,7 @@ python extractFeatures.py \
 --num_workers 8
 ```
 
-### Single-GPU: extract features from patch .png images
+The following script shows an example of extracting features from patch images using a single GPU: 
 ```
 export CUDA_VISIBLE_DEVICES=0
 python extractFeatures.py \
@@ -111,7 +136,7 @@ python extractFeatures.py \
 --num_workers 8  
 ```
 
-### Multiple-GPU
+The following script shows an example of extracting features from WSI files using multiple GPUs: 
 ```
 export CUDA_VISIBLE_DEVICES=0,1
 torchrun --nproc-per-node=2 extractFeatures.py \
@@ -124,9 +149,8 @@ torchrun --nproc-per-node=2 extractFeatures.py \
 --num_workers 8  
 ```
 
-The script supports applying models including pre-trained ResNet50, [UNI](https://huggingface.co/MahmoodLab/UNI), [prov-gigapath](https://huggingface.co/prov-gigapath/prov-gigapath) and [phikon](https://huggingface.co/owkin/phikon) and stain generalisation methods such as normalisation ([Reinhard](https://github.com/chia56028/Color-Transfer-between-Images)) and augmentation ([RandStainNA](https://github.com/yiqings/RandStainNA)).
 
-After running all combinations of different feature extractor and stain generalisation methods, this step yields:
+After running all combinations of different feature extractors and stain generalisation methods, this step yields:
 ```
 prj_BreastAgeNet/
 ├── Metadata/
@@ -146,27 +170,24 @@ prj_BreastAgeNet/
 └── RESULTs/
 ```
 
-
-**Step 1.2**: clean data
-This step further cleans the data by removing invalid slides that either failed to obtain features or contain epithelium patches (with a confidence higher than 0.9) less than 5. 
-
-For detailed implementation, please refer to [notebook clean_data](notebooks/clean_data.ipynb).
+Note, invalid slides that either failed to obtain features or contain epithelium patches (with a confidence higher than 0.9) less than 5 were removed. 
 
 
 
-### Step 2. _BreastAgeNet_ training 
+### 4.2 _BreastAgeNet_ training 
 
-Step 2.1: Five-fold cross-validation (cv) training
+**Five-fold cross-validation training**
 
-The training was implemented using different configurations through 5-fold cross-validation, tuning factors including feature extractor, attention mechanism, tissue content, and bag size. 
-For this, please implement the following code with different parameters:
+We implemented 5-fold cross-validation training tuning factors, including feature extractors, attention mechanisms, tissue contents, and bag sizes. 
+
+The following script shows an example of training a MultiHeadAttention-based _BreastAgeNet_ on a bag of UNI features of 250 random epithelium patches that were classified with >0.9 probability:
 ```
 python main.py \
-    --config-name config_train_cv.yaml \
-    +TC_epi=0.7 \
-    +bag_size=150 \
-    +model_name="UNI" \
-    +attention="MultiHeadAttention"
++
++TC_epi=0.9 \
++bag_size=250 \
++model_name="UNI" \
++attention="MultiHeadAttention"
 ```
 
 This step yields:
@@ -184,11 +205,22 @@ prj_BreastAgeNet/
     |   └── ...
     └── ...
 ```
+For 5-fold cross-validation results, please refer to [notebook Fig1.ipynb](notebooks/Fig1.ipynb).
 
-After identifying the best configuration, run the following code for a training on the full train_NR dataset:
+
+**Full dataset training**
+
+_BreastAgeNet_ was finally trained using the following script on the full train_NR dataset:
+
 ```
-python main.py --config_name config_v3
+python main.py \
++TC_epi=0.9 \
++bag_size=250 \
++model_name="UNI" \
++attention="MultiHeadAttention"
 ```
+
+
 This step yields:
 ```
 prj_BreastAgeNet/
