@@ -1,7 +1,5 @@
 import os
 import sys
-sys.path.append('/scratch_tmp/users/k21066795/BreastAgeNet')
-
 import glob
 import random
 import h5py
@@ -18,9 +16,10 @@ import stardist
 from stardist.models import StarDist2D
 from stardist.plot import render_label
 from csbdeep.utils import normalize
-from utils_model import parse_wsi_id
-from utils_features import Reinhard
-from utils_vis import get_xy
+
+from utils.utils_model import parse_wsi_id
+from utils.utils_features import Reinhard
+from utils.utils_vis import get_xy
 
 
 def get_xy(patch_id):
