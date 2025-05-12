@@ -696,7 +696,6 @@ def train_cv(config):
             
         # training loops
         since = time.time()
-
         output_dir = f'{config["resFolder"]}/{config["task"]}'
         os.makedirs(output_dir, exist_ok=True)
         ckpt_name = f'{output_dir}/epi{config["TC_epi"]}_{config["model_name"]}_{config["bag_size"]}_{config["attention"]}_fold{foldcounter}_best.pt'
