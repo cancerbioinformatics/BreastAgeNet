@@ -109,7 +109,6 @@ dependencies:
       - markupsafe==3.0.2
       - murmurhash==1.0.12
       - notebook==7.4.2
-      - numpy==1.26.4
       - nvidia-cublas-cu11==11.10.3.66
       - nvidia-cuda-cupti-cu11==11.7.101
       - nvidia-cuda-nvrtc-cu11==11.7.99
