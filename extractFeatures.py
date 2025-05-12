@@ -4,7 +4,7 @@ import random
 import torch
 import argparse
 import pandas as pd
-from utils_features import *
+from utils.utils_features import *
 
 import torch
 import torch.nn as nn
