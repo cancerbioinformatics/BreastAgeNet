@@ -106,7 +106,7 @@ python extractFeatures.py \
 --root /path/to/root \
 --dataset KHP \
 --image_type patch \
---patch_csv /csv/file/containing/file_path  \ # the 'file_path' column contains the absolute image path of each patch
+--patch_csv /csv/file/containing/file_path   \ # the 'file_path' column contains the absolute image path of each patch
 --batch_size 16 \
 --num_workers 8  
 ```
