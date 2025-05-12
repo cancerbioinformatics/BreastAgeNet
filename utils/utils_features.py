@@ -19,13 +19,15 @@ import torchvision
 import torchvision.models as models
 from torch.utils.data import Dataset
 from torchvision import transforms as pth_transforms
-from transformers import AutoImageProcessor, ViTModel
+
 import timm
-import vision_transformer as vits
-from vision_transformer import vit_base
+import utils.vision_transformer as vits
+from utils.vision_transformer import vit_base
+
 from transformers import AutoModel
+from transformers import AutoImageProcessor, ViTModel
 from huggingface_hub import login, hf_hub_download
-# login()
+login()
 
 sys.path.append('../RandStainNA')
 from randstainna import RandStainNA
