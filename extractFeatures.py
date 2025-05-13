@@ -14,7 +14,7 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 
 
 def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch_size, num_workers, device):
-    """Extract features from WSIs (e.g., '.ndpi' files)."""
+"""Extract features from WSIs (e.g., '.ndpi' files)."""
     wsinames = os.listdir(f'{root}/WSIs/{dataset}')
     wsi_ids = [i.split('.')[0] for i in wsinames]
     for wsi_id in wsi_ids:
@@ -22,7 +22,8 @@ def Extract_features_from_WSIs(root, dataset, model, transform, stainFunc, batch
         fname = f"{output_dir}/{wsi_id}_bagFeature_{model_name}_{stainFunc}.h5"
         if not os.path.exists(fname):
             print(f"Processing WSI: {wsi_id}", flush=True)
-            file = glob.glob(f"{root}/FEATUREs/{dataset}/{wsi_id}/{wsi_id}*_TC_512_patch_all.csv")
+            file = glob.glob(f"{root}/FEATURES/{dataset}/{wsi_id}/{wsi_id}_TC_512_patch_all.csv")
+            print(file)
             if file:
                 print(f"Found CSV file: {file[0]}")
                 bag_df = pd.read_csv(file[0])
@@ -77,6 +78,7 @@ patch_csv = args.patch_csv
 batch_size = args.batch_size
 num_workers = args.num_workers
 use_ddp = 'RANK' in os.environ and 'WORLD_SIZE' in os.environ
+
 
 
 if use_ddp:
