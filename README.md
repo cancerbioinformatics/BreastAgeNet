@@ -34,7 +34,7 @@ The framework performs foreground tissue detection, patch tessellation and tissu
 
 
 <p align="center">
-    <img src="Docs/pre-processing.png" width="90%">
+    <img src="Docs/pre-processing.png" width="75%">
 </p>
 
 
