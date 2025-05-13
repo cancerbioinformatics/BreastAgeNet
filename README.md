@@ -101,7 +101,7 @@ Launch `breastagenet` container and map the local `project/` folder to the `/pro
 singularity shell --nv \
 --bind /path/to/project:/project \
 --writable-tmpfs \
-./breastagenet_latest.sif 
+./breastagenet_latest.sif
 ```
 
 Inside the container, run the following script:
@@ -125,20 +125,19 @@ CUDA_VISIBLE_DEVICES=0 python extractFeatures.py \
 --model UNI \
 --stain augmentation \
 --root /project \
---dataset NKI \   # change this to your dataset name
+--dataset NKI \   
 --image_type WSI \
 --batch_size 16 \
 --num_workers 8
 ```
 
-The following script shows an example of extracting features from WSI files using multiple GPUs: 
+for using multiple GPUs: 
 ```
-export CUDA_VISIBLE_DEVICES=0,1
-torchrun --nproc-per-node=2 extractFeatures.py \
+CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc-per-node=2 extractFeatures.py \
 --model UNI \
 --stain augmentation \
 --root /project \
---dataset KHP \  # change this to your dataset name
+--dataset NKI \
 --image_type WSI \
 --batch_size 32 \
 --num_workers 8  
@@ -175,7 +174,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 ++task=train_cv  \
 ++clinic_path=/project/Metadata/train_NR_clean.csv \
 ++FEATURES=/project/FEATUREs  \
-++resFolder=/project/RESULTs/main  \
+++resFolder=/project/Docker_test/RESULTs/main  \
 ++TC_epi=0.9  \
 ++bag_size=250  \
 ++model_name=UNI  \
@@ -208,7 +207,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 ++task=train_full  \
 ++clinic_path=/project/Metadata/train_NR_clean.csv  \
 ++FEATURES=/project/FEATUREs  \
-++resFolder=/project/RESULTs/main  \
+++resFolder=/project/Docker_test/RESULTs/main  \
 ++TC_epi=0.9  \
 ++bag_size=250  \
 ++model_name=UNI  \
@@ -237,12 +236,13 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 ++task=test_full \
 ++clinic_path=/project/Metadata/test_NR_clean.csv \
 ++FEATURES=/project/FEATUREs \
-++resFolder=/project/RESULTs/main \
+++resFolder=/project/Docker_test/RESULTs/main \
 ++TC_epi=0.9 \
 ++bag_size=250 \
 ++model_name=UNI \
 ++attention=MultiHeadAttention \
-++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt 
+++stainFunc=reinhard \
+++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt
 ```
 
 
