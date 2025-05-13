@@ -49,7 +49,7 @@ The implementation can largely be broken down into the following four steps:
 
 For these implementations, install BreastAgeNet under the root folder:
 ```
-cd /path/to/root
+cd /path/to/project
 git clone https://github.com/cancerbioinformatics/BreastAgeNet.git
 
 cd BreastAgeNet/
@@ -73,7 +73,7 @@ singularity pull docker://siyuan726/breastagenet:latest
 ```
 
 
-### 5.0 Run `breastagenet` container in an interactive mode
+### 5.1 Run `breastagenet` container in an interactive mode
 
 Please prepare a local `project/` folder with a structure similar to the one shown below:
 ```
@@ -112,7 +112,7 @@ cd /app/BreastAgeNet
 ```
 
 
-### 5.1 Feature extraction
+### 5.1.1 Feature extraction
 
 Based on the `_TC_512_patch_all.csv` file that contains the patch information, this step randomly selects target patches to form the input bag and extracts visual features for them via pre-trained feature extractors.
 
@@ -165,7 +165,7 @@ After running all combinations of different feature extractors and stain general
 ```
 
 
-### 5.2 _BreastAgeNet_ 5-fold cross-validation training 
+### 5.1.2 _BreastAgeNet_ 5-fold cross-validation training 
 
 We implemented 5-fold cross-validation training tuning factors, including feature extractors, attention mechanisms, tissue contents, and bag sizes. 
 
@@ -199,7 +199,7 @@ prj_BreastAgeNet/
 ```
 
 
-### 5.3 _BreastAgeNet_ full dataset training
+### 5.1.3 _BreastAgeNet_ full dataset training
 
 _BreastAgeNet_ was finally trained using the following script on the full train_NR dataset:
 
@@ -229,7 +229,7 @@ prj_BreastAgeNet/
 ```
 
 
-### 5.4 _BreastAgeNet_ full dataset testing
+### 5.1.4 _BreastAgeNet_ full dataset testing
 
 Here is an example:
 ```
@@ -247,7 +247,7 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 
 
 
-### 5.5 _BreastAgeNet_ a single slide testing
+### 5.1.5 _BreastAgeNet_ a single slide testing
 
 Here is an example in python:
 ```
@@ -260,7 +260,7 @@ test_single_slide(wsi_path, patch_info, age_group)
 ```
 
 
-### 5.6 Visualisation
+### 5.1.6 Visualisation
 
 We provide notebooks to reproduce the main figures in the paper. To access and run the notebooks, please run the following:
 
@@ -275,6 +275,43 @@ chmod +x run_jupyter.sh
 ```
 
 Then, please follow the instructions and launch the Jupyter Lab. The notebooks are available in `/app/BreastAgeNet/notebooks`
+
+
+### 5.2 Run `breastagenet` container in an non-interactive mode
+
+```
+# 1) feature extraction
+singularity exec --nv \
+  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app  \
+  --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
+  ./breastagenet_latest.sif \
+  conda run -n breastagenet python /app/BreastAgeNet/extractFeatures.py \
+    --model phikon \
+    --stain augmentation \
+    --root /project \
+    --dataset KHP_RM \
+    --image_type WSI \
+    --batch_size 16 \
+    --num_workers 8
+
+
+# 2) 5-fold CV training
+
+
+
+# 3) full dataset training
+
+
+
+# 4) full dataset testing
+
+
+
+
+# 5) Jupyter notebook visualisation
+
+
+```
 
 
 
