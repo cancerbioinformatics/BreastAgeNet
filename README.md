@@ -12,7 +12,7 @@
 
 
 <p align="center">
-    <img src="Docs/BreastAgeNet.png" width="80%">
+    <img src="Docs/BreastAgeNet.png" width="60%">
 </p>
 
 
