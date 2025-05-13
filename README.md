@@ -328,7 +328,7 @@ singularity exec --nv \
     ++TC_epi=0.9 \
     ++bag_size=250 \
     ++model_name=UNI \
-    ++attention=MultiHeadAttention
+    ++attention=MultiHeadAttention"
 ```
 
 ### 5.2.4 full dataset testing
