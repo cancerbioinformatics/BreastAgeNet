@@ -207,7 +207,7 @@ _BreastAgeNet_ was finally trained using the following script on the full train_
 CUDA_VISIBLE_DEVICES=0 python main.py \
 ++task=train_full  \
 ++clinic_path=/project/Metadata/train_NR_clean.csv  \
-++FEATURES=/project/FEATURES  \
+++FEATURES=/project/FEATUREs  \
 ++resFolder=/project/RESULTs/main  \
 ++TC_epi=0.9  \
 ++bag_size=250  \
@@ -236,7 +236,7 @@ Here is an example:
 CUDA_VISIBLE_DEVICES=0 python main.py \
 ++task=test_full \
 ++clinic_path=/project/Metadata/test_NR_clean.csv \
-++FEATURES=/project/FEATURES \
+++FEATURES=/project/FEATUREs \
 ++resFolder=/project/RESULTs/main \
 ++TC_epi=0.9 \
 ++bag_size=250 \
