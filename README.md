@@ -58,7 +58,7 @@ conda activate breastagenet
 ```
 
 
-## 5. BeastAgeNet Docker [link](https://hub.docker.com/repository/docker/siyuan726/breastagenet/general)
+## 5. BeastAgeNet Docker ([link](https://hub.docker.com/repository/docker/siyuan726/breastagenet/general))
 
 BreastAgeNet supports Docker for the key implementation steps and for reproducing the main figures in the paper. 
 
