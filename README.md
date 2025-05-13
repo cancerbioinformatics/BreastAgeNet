@@ -279,7 +279,7 @@ Then, please follow the instructions and launch the Jupyter Lab. The notebooks a
 
 ### 5.2 Run `breastagenet` container in an non-interactive mode
 
-# 1) feature extraction
+### 1) feature extraction
 ```
 singularity exec --nv \
   --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
@@ -295,7 +295,7 @@ singularity exec --nv \
     --num_workers 8"
 ```
 
-# 2) 5-fold CV training
+### 2) 5-fold CV training
 ```
 singularity exec --nv \
   --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
@@ -313,7 +313,7 @@ singularity exec --nv \
   ++attention=MultiHeadAttention"
 ```
 
-# 3) full dataset training
+### 3) full dataset training
 ```
 singularity exec --nv \
   --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
@@ -332,7 +332,7 @@ singularity exec --nv \
     ++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt"
 ```
 
-# 4) full dataset testing
+### 4) full dataset testing
 ```
 singularity exec --nv \
   --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
@@ -351,9 +351,7 @@ singularity exec --nv \
     ++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt"
 ```
 
-
-
-# 5) Jupyter notebook visualisation
+### 5) Jupyter notebook visualisation
 ```
 singularity exec --nv \
 --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
@@ -365,7 +363,6 @@ python -m ipykernel install --user --name=breastagenet --display-name="breastage
 chmod +x run_jupyter.sh && \
 ./run_jupyter.sh'
 ```
-
 
 
 ## 6. _BreastAgeNet_ future directions
