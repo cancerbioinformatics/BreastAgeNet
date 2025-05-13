@@ -314,7 +314,6 @@ singularity exec --nv \
 ### 5.2.3 full dataset training
 ```
 singularity exec --nv \
-  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
   --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
   ./breastagenet_latest.sif \
   bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && cd /project && \
@@ -332,7 +331,6 @@ singularity exec --nv \
 ### 5.2.4 full dataset testing
 ```
 singularity exec --nv \
-  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
   --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
   ./breastagenet_latest.sif \
   bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && cd /project && \
@@ -363,6 +361,7 @@ bash run_jupyter.sh'
 
 ## 6. _BreastAgeNet_ future directions
 _BreastAgeNet_ can identify NBT with an abnormal ageing process. Taking it further, attention heatmaps can pinpoint tissue regions responsible for 'mismatched' tissue ageing predictions. This approach opens the door to techniques like spatial transcriptomics, which could further elucidate molecular abnormalities at these sites—potentially identifying early indicators of cancer initiation.
+
 
 
 ## Acknowledgements
