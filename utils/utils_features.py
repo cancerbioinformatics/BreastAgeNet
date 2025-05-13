@@ -29,7 +29,8 @@ from transformers import AutoImageProcessor, ViTModel
 # from huggingface_hub import login, hf_hub_download
 # login()
 
-sys.path.append('../RandStainNA')
+
+sys.path.append('/app/RandStainNA')
 from randstainna import RandStainNA
 
 torch.multiprocessing.set_sharing_strategy('file_system')
@@ -38,7 +39,7 @@ device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cp
 
 
 def Reinhard(img_arr):
-    standard_img = "./data/he.jpg"
+    standard_img = "/app/BreastAgeNet/data/he.jpg"
     target = staintools.read_image(standard_img)
     target = staintools.LuminosityStandardizer.standardize(target)
     normalizer = staintools.ReinhardColorNormalizer()
@@ -61,8 +62,9 @@ def eval_transforms(pretrained=False):
 
 
 
+
 def get_model(model_name, device):
-    custom_path = './weights'
+    custom_path = '/app/BreastAgeNet/weights' 
     os.makedirs(custom_path, exist_ok=True)
     
     if model_name == "resnet50":
@@ -81,11 +83,9 @@ def get_model(model_name, device):
     elif model_name == "phikon":
         model = ViTModel.from_pretrained("owkin/phikon", cache_dir=custom_path, add_pooling_layer=False)
         image_processor = AutoImageProcessor.from_pretrained("owkin/phikon")
-        
         normalize = pth_transforms.Normalize(
             mean=image_processor.image_mean,
             std=image_processor.image_std)
-        
         transform = pth_transforms.Compose([
             pth_transforms.Resize((256,256)),
             pth_transforms.CenterCrop((224, 224)),
@@ -96,12 +96,10 @@ def get_model(model_name, device):
         # local_dir = f"{custom_path}/UNI"
         # os.makedirs(local_dir, exist_ok=True) 
         # hf_hub_download("MahmoodLab/UNI", filename="pytorch_model.bin", local_dir=local_dir, force_download=True)
-                
         model = timm.create_model(
             "vit_large_patch16_224", img_size=224, patch_size=16, init_values=1e-5, num_classes=0, dynamic_img_size=True
         )
         model.load_state_dict(torch.load(os.path.join(custom_path, 'UNI', "pytorch_model.bin"), map_location="cpu"), strict=True)
-        
         transform = pth_transforms.Compose(
             [pth_transforms.Resize((256,256)),
              pth_transforms.CenterCrop((224, 224)),
@@ -114,10 +112,8 @@ def get_model(model_name, device):
         # local_dir = f"{custom_path}/gigapath"
         # os.makedirs(local_dir, exist_ok=True)  
         # hf_hub_download("prov-gigapath/prov-gigapath", filename="pytorch_model.bin", local_dir=local_dir, force_download=True)
-        
         model = timm.create_model("hf_hub:prov-gigapath/prov-gigapath", pretrained=False)
         model.load_state_dict(torch.load(os.path.join(custom_path, 'gigapath', "pytorch_model.bin"), map_location="cpu"), strict=True)
-
         transform = pth_transforms.Compose(
             [
                 pth_transforms.Resize(256, interpolation=pth_transforms.InterpolationMode.BICUBIC),
@@ -165,7 +161,7 @@ class Dataset_fromWSI(Dataset):
        
         elif self.stainFunc == 'augmentation':
             augmentor = RandStainNA(
-                yaml_file = '../RandStainNA/CRC_LAB_randomTrue_n0.yaml',
+                yaml_file = '/app/RandStainNA/CRC_LAB_randomTrue_n0.yaml',
                 std_hyper = 0.0,
                 distribution = 'normal',
                 probability = 1.0,
@@ -183,12 +179,12 @@ class Dataset_fromWSI(Dataset):
 
 
 
-    
 
 class Dataset_frompatch(Dataset):
     def __init__(self, patch_df, stainFunc, transforms_eval):
         self.csv = patch_df.copy()
         self.stainFunc = stainFunc
+        print(f'stain normalsation: {self.stainFunc}')
         self.transforms = transforms_eval
         
     def __getitem__(self, index):
@@ -197,17 +193,16 @@ class Dataset_frompatch(Dataset):
         
         if self.stainFunc == 'reinhard': 
             patch_im = Image.fromarray(Reinhard(np.array(patch_im)))
+            
         elif self.stainFunc == 'augmentation':
             augmentor = RandStainNA(
-                yaml_file = '/scratch_tmp/users/k21066795/RandStainNA/CRC_LAB_randomTrue_n0.yaml',
+                yaml_file = '/app/RandStainNA/CRC_LAB_randomTrue_n0.yaml',
                 std_hyper = 0.0,
                 distribution = 'normal',
                 probability = 1.0,
                 is_train = True) # is_train:True——> img is RGB format
             patch_im = Image.fromarray(augmentor(patch_im))
-        elif self.stainFunc== "Macenko":
-            normalizer = macenko_normalizer(target_path = '/scratch_tmp/users/k21066795/EXAONEPath/macenko_target/target_TCGA-55-A48X_coords_[19440  9824]_[4096 4096].png')
-            patch_im = normalizer(patch_im)
+
         elif self.stainFunc == 'raw':
             patch_im = Image.fromarray(np.array(patch_im))
             
@@ -215,37 +210,6 @@ class Dataset_frompatch(Dataset):
         
     def __len__(self):
         return self.csv.shape[0]
-
-
-
-# class Dataset_fromROI(Dataset):    
-#     def __init__(self, ROIs, patch_size=512, transforms_eval=None):
-#         self.ROIs = ROIs
-#         self.patch_size = patch_size
-#         self.transforms = transforms_eval if transforms_eval else transforms.Compose([transforms.ToTensor()])
-#         self.roi_files = glob.glob(f"{self.ROIs}/*/*/*.png")  # Adjust the pattern based on your ROI files
-                
-#     def __getitem__(self, index):
-#         roi_path = self.roi_files[index]
-#         roi = np.array(Image.open(roi_path))
-        
-#         h, w = roi.shape[:2]
-#         patches = []
-#         for y in range(0, h, self.patch_size):
-#             for x in range(0, w, self.patch_size):
-#                 if x + self.patch_size <= w and y + self.patch_size <= h:
-#                     patch = roi[y : y + self.patch_size, x : x + self.patch_size]
-#                     patch_im_resized = Image.fromarray(patch).resize((256, 256))  # Resize patch to 256x256
-#                     patch_im_norm = self.transforms(patch_im_resized)
-#                     patches.append(patch_im_norm)
-        
-#         if not patches:
-#             return torch.zeros(3, 256, 256), roi_path
-        
-#         return random.choice(patches), roi_path
-    
-#     def __len__(self):
-#         return len(self.roi_files)
 
 
 

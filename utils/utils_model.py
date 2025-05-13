@@ -142,53 +142,6 @@ def clean_data(meta_pt, FEATURES, model_name="UNI", stainFunc="reinhard"):
 
 
 
-# def get_data(clinic_path, FEATURES, model_name, stainFunc, TC_epi): 
-#     clinic_df = pd.read_csv(clinic_path)
-
-#     h5dfs = []
-#     for wsi_id in list(clinic_df["wsi_id"]):
-#         file = glob.glob(f'{FEATURES}/*/{wsi_id}*/{wsi_id}*{model_name}*{stainFunc}*.h5')
-#         h5dfs.append(file[0])  
-#     clinic_df["h5df"] = h5dfs 
-
-    
-#     valid_wsi = []
-#     valid_patches = []
-#     for fea_pt in clinic_df["h5df"]: 
-#         with h5py.File(fea_pt, "r") as file:
-#             bag = np.array(file["embeddings"])
-#             bag = np.squeeze(bag)
-#             img_id = np.array(file["patch_id"])
-#         img_id = [i.decode("utf-8") for i in img_id]
-#         bag_df = pd.DataFrame(bag)
-#         bag_df.index = img_id
-    
-#         csv_pt = glob.glob(f"{fea_pt.split('_bagFeature_')[0]}*patch.csv")[0]
-#         df = pd.read_csv(csv_pt)
-#         valid_id = list(df['patch_id'][df['TC_epi'] > TC_epi])
-#         valid_id = list(set(valid_id) & set(bag_df.index))
-#         valid_patches.extend(valid_id)
-#         if valid_id:
-#             wsi_id = parse_wsi_id(valid_id[0])
-#             valid_wsi.extend([wsi_id] * len(valid_id))
-    
-#     a, b = np.unique(valid_wsi, return_counts=True)
-#     filtered_a = [i for i, count in zip(a, b) if count >= 5]
-    
-#     print("-" * 30)
-#     print("filtering patches...")
-#     clinic_df = clinic_df[clinic_df["wsi_id"].isin(filtered_a)].copy()
-#     clinic_df["h5df"] = [Path(i) for i in list(clinic_df["h5df"])]
-#     valid_patches = [i for i in valid_patches if parse_wsi_id(i) in filtered_a]
-#     print(f"number of valid patches: {len(valid_patches)}")
-    
-#     print_summary(clinic_df)
-    
-#     return clinic_df, valid_patches
-
-
-
-
 def get_data(clinic_path, FEATURES, model_name, stainFunc, TC_epi): 
     clinic_df = pd.read_csv(clinic_path)
 
@@ -220,7 +173,7 @@ def get_data(clinic_path, FEATURES, model_name, stainFunc, TC_epi):
         bag_df.index = img_id
 
         # Load corresponding CSV file with patch info
-        csv_files = glob.glob(f"{fea_pt.split('_bagFeature_')[0]}*patch.csv")
+        csv_files = glob.glob(f"{fea_pt.split('_bagFeature_')[0]}*patch*.csv")
         if not csv_files:
             print(f"⚠️ No patch info CSV found for {fea_pt}, skipping.")
             continue
@@ -249,6 +202,8 @@ def get_data(clinic_path, FEATURES, model_name, stainFunc, TC_epi):
     return clinic_df, valid_patches
 
 
+
+    
 def split_data_per_fold(clinic_df, patientID, truelabels, train_index, test_index, stainFunc):
     print('Preparing train/test patients, 80/20 split')
     test_patients = patientID[test_index]
@@ -347,7 +302,6 @@ def Attention(n_in, n_latent: Optional[int] = None) -> nn.Module:
 
 
 
-
 class GatedAttention(nn.Module):
     def __init__(self, n_in, n_latent: Optional[int] = None) -> None:
         super().__init__()
@@ -358,7 +312,6 @@ class GatedAttention(nn.Module):
 
     def forward(self, h: torch.Tensor) -> torch.Tensor:
         return self.fc2(torch.tanh(self.fc1(h)) * torch.sigmoid(self.gate(h)))
-
 
 
 
@@ -696,6 +649,7 @@ def train_cv(config):
             
         # training loops
         since = time.time()
+
         output_dir = f'{config["resFolder"]}/{config["task"]}'
         os.makedirs(output_dir, exist_ok=True)
         ckpt_name = f'{output_dir}/epi{config["TC_epi"]}_{config["model_name"]}_{config["bag_size"]}_{config["attention"]}_fold{foldcounter}_best.pt'
@@ -819,6 +773,7 @@ def train_full(config):
 
 
 
+    
 def load_BreastAgeNet(ckpt_pt, embed_attn=False):
     # set embed_attn=True to obtain latent embeddings and attention scores
     
@@ -874,7 +829,6 @@ def test_model_iterations(model, dataloaders, n_iteration = 1):
 
 
 
-
 def test_full(config):
     # select device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -910,7 +864,6 @@ def test_full(config):
 
 
 
-
 def get_averaged_outputs(outputs):
     # Convert 'branch_0', 'branch_1', 'branch_2' to numeric (if necessary)
     outputs['branch_0'] = pd.to_numeric(outputs['branch_0'], errors='coerce')
@@ -940,8 +893,4 @@ def get_averaged_outputs(outputs):
 
     averaged_data = averaged_data.drop_duplicates("wsi_id")
     return averaged_data
-
-
-
-
 

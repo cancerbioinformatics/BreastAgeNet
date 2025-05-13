@@ -2,7 +2,6 @@
 adapted the code from https://github.com/facebookresearch/dino. 
 '''
 import os
-# os.chdir("/scratch/users/k21066795/prj_normal/awesome_normal_breast/scripts")
 import torch
 import h5py
 import numpy as np
@@ -23,11 +22,11 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS = 933120000
 import timm
 from huggingface_hub import login, hf_hub_download
-# from ctran import ctranspath
+
 torch.multiprocessing.set_sharing_strategy('file_system')
 
-from utils_vis import plot_multiple
-from utils_features import Reinhard
+from utils.utils_vis import plot_multiple
+from utils.utils_features import Reinhard
 import torch.nn as nn
 from torchvision import transforms as pth_transforms
 
@@ -65,12 +64,13 @@ def my_forward_wrapper(attn_obj):
 
 
 def get_attentions_lastlayer(patch, threshold=0.6):
- 
-    model = timm.create_model("hf-hub:MahmoodLab/uni", pretrained=True, init_values=1e-5, dynamic_img_size=True)
+    model = timm.create_model(
+        "vit_large_patch16_224", img_size=224, patch_size=16, init_values=1e-5, num_classes=0, dynamic_img_size=True
+    )
+    model.load_state_dict(torch.load(os.path.join("/app/BreastAgeNet/weights/UNI/pytorch_model.bin"), map_location="cpu"), strict=True)
     transform = pth_transforms.Compose(
         [pth_transforms.Resize((256,256)),
          pth_transforms.CenterCrop((224, 224)),
-         # pth_transforms.Resize(224),
          pth_transforms.ToTensor(),
          pth_transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         ]
@@ -79,34 +79,32 @@ def get_attentions_lastlayer(patch, threshold=0.6):
     # add attn outputs
     model.blocks[-1].attn.forward = my_forward_wrapper(model.blocks[-1].attn)
     model = model.eval()
-    
     im_norm = Image.fromarray(Reinhard(np.array(patch)))
     input_im = transform(im_norm)
     pixel_values = torch.unsqueeze(input_im, axis=0)
-   
     y = model(pixel_values)
     attentions = model.blocks[-1].attn.attn_map
-    
     nh = attentions.shape[1] # number of head
-    # we keep only the output patch attention
+    
+    # keep only the output patch attention
     attentions = attentions[0, :, 0, 1:].reshape(nh, -1)
     print(attentions.shape)
-
     w_featmap = pixel_values.shape[-2] // 16
     h_featmap = pixel_values.shape[-1] // 16
     
-    # we keep only a certain percentage of the mass
+    # keep only a certain percentage of the mass
     val, idx = torch.sort(attentions)
     val /= torch.sum(val, dim=1, keepdim=True)
     cumval = torch.cumsum(val, dim=1)
     th_attn = cumval > threshold
     idx2 = torch.argsort(idx)
+    
     for head in range(nh):
         th_attn[head] = th_attn[head][idx2[head]]
     th_attn = th_attn.reshape(nh, w_featmap, h_featmap).float()
+    
     # interpolate
     th_attn = nn.functional.interpolate(th_attn.unsqueeze(0), scale_factor=16, mode="nearest")[0].cpu().numpy()
-
     attentions = attentions.reshape(nh, w_featmap, h_featmap)
     attentions = nn.functional.interpolate(attentions.unsqueeze(0), scale_factor=16, mode="nearest")[0].cpu()
     attentions = attentions.detach().numpy()

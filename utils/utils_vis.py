@@ -35,6 +35,7 @@ from itertools import combinations  # Add this import
 
 from scipy.stats import mode
 from scipy.stats import ranksums
+from scipy.stats import kruskal
 from statsmodels.stats.multitest import multipletests
 from scipy.ndimage import zoom
 import numpy as np
@@ -49,7 +50,6 @@ import geopandas as gpd
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-
 
 
 
@@ -114,7 +114,6 @@ def branch_ROC(df, branch=0, class_name=">35y", ax=None, savefig=None, fontsize=
         plt.grid(True)
         plt.savefig(savefig, format='pdf')
         plt.show()
-
 
 
 
@@ -318,74 +317,6 @@ def plot_tsne(tsne_df, color='age_group', custom_palette=None, vmin=None, vmax=N
 
 
 
-# def plot_RidgePlot(tsne_df, label="age_group", save_pt=None):
-#     custom_palette = {0: '#262262', 1: '#87ACC5', 2: '#00A261', 3: '#FFF200'}
-    
-#     g = sns.FacetGrid(tsne_df, row=label, hue=label, aspect=15, height=1, palette=custom_palette)
-#     g.map(sns.kdeplot, "tsne1",
-#           bw_adjust=.5, clip_on=False,
-#           fill=True, linewidth=1.5, alpha=0.8)  
-#     g.map(sns.kdeplot, "tsne1", clip_on=False, color="w", lw=2, bw_adjust=.5, alpha=0) 
-#     g.refline(y=0, linewidth=2, linestyle="-", color=None, clip_on=False)
-
-#     def label_func(x, color, label):
-#         ax = plt.gca()
-#         ax.text(-0.1, 0.1, f"Rank {label}", fontweight="bold", color="black",  
-#                 ha="left", va="center", transform=ax.transAxes)
-
-#     g.map(label_func, "tsne1")
-#     g.figure.subplots_adjust(hspace=-.25)
-#     g.set_titles("")
-#     g.set(yticks=[], ylabel="")
-#     g.despine(bottom=True, left=True)
-
-#     for ax in g.axes.flat:
-#         ax.set_facecolor('none')  # Subplot background is transparent
-#         ax.spines['top'].set_visible(False)  # Remove top spine (border)
-#         ax.spines['right'].set_visible(False)  # Remove right spine (border)
-#         ax.spines['left'].set_visible(False)  # Remove left spine (border)
-#         ax.spines['bottom'].set_visible(False)  # Remove bottom spine (border)
-#         ax.grid(False)  # Remove gridlines
-
-#     fig = plt.gcf()
-#     fig.set_size_inches(5, 5) 
-#     if save_pt is not None:
-#         plt.savefig(save_pt, format="pdf", dpi=300, transparent=True)
-#     plt.show()
-
-
-
-
-
-# def plot_2D_DensityPlot(tsne_df, label="age_group", max_categories=4, save_pt=None):
-#     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-#     sns.set(style="white")
-#     axes = axes.flatten()
-#     for i in range(max_categories):
-#         category = np.unique(tsne_df[label])[i]
-#         subset = tsne_df[tsne_df[label] == category]
-
-#         sns.kdeplot(
-#             x=subset["tsne1"],
-#             y=subset["tsne2"],
-#             fill=True,
-#             alpha=0.5,
-#             ax=axes[i],
-#             cmap="viridis"
-#         )
-
-#         axes[i].set_title(f"Density Plot for {category}")
-#         axes[i].set_xlabel("t-SNE 1")
-#         axes[i].set_ylabel("t-SNE 2")
-
-#     plt.tight_layout()
-#     plt.suptitle("t-SNE Density Plots by Category", y=1.02)
-#     if save_pt:
-#         plt.savefig(save_pt, dpi=300, bbox_inches='tight', pad_inches=0.1)
-#     plt.show()
-
-
-
 
 def highlight_pattern_in_tsne(tsne_df, label='Cluster', cmap="coolwarm", 
                               max_size=50, min_size=10, 
@@ -475,6 +406,7 @@ def get_xy(patch_id):
 
 
 
+
 def paste_HE_on_tsne(tsne_df, WSI_folder='/scratch_tmp/prj/cb_normalbreast/prj_BreastAgeNet/WSIs',
                      cluster_colors=None, max_dim=200, n_samples=500, 
                      image_size=(4000, 3000), random_state=42):
@@ -557,7 +489,6 @@ def get_Cluster_example(tsne_df, cluster_id, im_num, WSIs="/scratch_tmp/prj/cb_n
     print(f"[INFO] Cluster {cluster_id}: Collected {len(img_list)} valid patches (attempted {attempted}).")
 
     return img_list
-
 
 
 
@@ -814,7 +745,6 @@ def lobulemask_fromAnnotation(wsi_path=None, anno_pt=None):
     mask = mask.astype(np.uint8)
 
     return mask
-
 
 
 
@@ -1159,6 +1089,7 @@ def plot_cluster_proportion_for_a_WSI(WSI_df, save_pt=None, normalize=False):
 
 
 
+
 def build_poly(tx: np.ndarray, ty: np.ndarray, bx: np.ndarray, by: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     px = np.vstack((tx, bx, bx, tx)).T
     py = np.vstack((ty, ty, by, by)).T
@@ -1166,6 +1097,7 @@ def build_poly(tx: np.ndarray, ty: np.ndarray, bx: np.ndarray, by: np.ndarray) -
     
 
 
+    
 def clusters_json_for_a_WSI(WSI_df, wsi_id, cluster_colors, json_dir=None, require_bounds=False):
     # cluster_colors = {0: '#8da0cb', 1: '#66c2a5', 2: '#ffd92f', 3: '#b3b3b3'}
     tx = np.array(WSI_df["x_orig"]).astype("int")
@@ -1240,6 +1172,8 @@ def plot_stacked_bar_and_age_group_annotation(df, figsize=(12, 10), save_pt=None
     ax2.set_ylabel("Proportion of P0-P3 by Cluster", fontsize=12)
     ax2.set_title("Stacked Barplot of Proportions by Cluster for Each WSI", fontsize=16)
     ax2.legend(title="Cluster", labels=["P0", "P1", "P3", "P2"], bbox_to_anchor=(1, 1))
+    ax2.tick_params(axis='x', labelsize=4)  # Change 8 to whatever size you prefer
+
 
     plt.tight_layout()
     if save_pt:
@@ -1248,54 +1182,6 @@ def plot_stacked_bar_and_age_group_annotation(df, figsize=(12, 10), save_pt=None
     else:
         plt.show()
 
-
-
-
-# def Cluster_proportion_heatmap(tsne_df, save_pt=None):
-#     proportions = tsne_df.groupby(['age_group', 'Cluster']).size().unstack(fill_value=0)
-#     proportions = proportions.div(proportions.sum(axis=1), axis=0)  # Normalize to 100%
-#     proportions = proportions.reset_index().melt(id_vars="age_group", value_vars=proportions.columns, var_name="Cluster", value_name="proportion")
-    
-#     heatmap_data = proportions.pivot(index="age_group", columns="Cluster", values="proportion")
-#     desired_order = ['P0', 'P1', 'P2', 'P3']
-#     available_columns = [col for col in desired_order if col in heatmap_data.columns]
-#     if len(available_columns) == len(desired_order):
-#         # Reorder the columns
-#         heatmap_data = heatmap_data[available_columns]
-#     else:
-#         print("Mismatch in columns. Available columns:", heatmap_data.columns)
-
-#     plt.figure(figsize=(8, 6))
-#     sns.heatmap(heatmap_data, annot=True, cmap="YlGnBu", cbar_kws={'label': 'Proportion'}, fmt='.2f',
-#                 annot_kws={'size': 16})
-#     plt.title("Heatmap of Cluster Proportions by Age Group", fontsize=12)
-#     plt.xlabel("Cluster", fontsize=12)
-#     plt.ylabel("Age Group", fontsize=12)
-#     plt.tight_layout()
-#     if save_pt is not None:
-#         plt.savefig(fname=save_pt, dpi=300, bbox_inches='tight', pad_inches=0.1)
-#     plt.show()
-
-
-
-
-# def Cluster_proportion_barplot(tsne_df, save_pt):
-#     proportions = tsne_df.groupby(['age_group', 'Cluster']).size().unstack(fill_value=0)
-#     proportions = proportions.div(proportions.sum(axis=1), axis=0)  # Normalize to 100%
-#     proportions = proportions.reset_index().melt(id_vars="age_group", value_vars=proportions.columns, 
-#                                                  var_name="Cluster", value_name="proportion")
-    
-#     plt.figure(figsize=(10, 6))
-#     sns.barplot(data=proportions, x='age_group', y='proportion', hue='Cluster', palette='Set2')
-#     plt.title("Proportional Barplot of Cluster Proportions by Age Group", fontsize=14)
-#     plt.xlabel("Age Group", fontsize=12)
-#     plt.ylabel("Proportion", fontsize=12)
-#     plt.legend(title="Cluster", bbox_to_anchor=(1.05, 1), loc='upper left')
-#     plt.xticks(rotation=45)
-#     plt.tight_layout()
-#     if save_pt is not None:
-#         plt.savefig(save_pt, format="pdf", dpi=300)
-#     plt.show()
 
 
 
@@ -1319,13 +1205,13 @@ def plot_oneline(img_list, caption_list, figure_size, save_pt=None):
 
     
 
-def plot_multiple(img_list, caption_list=None, grid_x=4, grid_y=4, figure_size=(10, 10), title=None, save_pt=None):
+def plot_multiple(img_list, caption_list=None, grid_x=4, grid_y=4, figure_size=(10, 10), title=None, cmap= 'hot', save_pt=None):
     fig, axes = plt.subplots(grid_y, grid_x, figsize=figure_size)
     axes = axes.flatten()
 
     # Loop through the images and plot them on the subplots
     for i, img in enumerate(img_list):
-        axes[i].imshow(img)
+        axes[i].imshow(img, cmap=cmap)
         axes[i].axis('off')  # Hide axes
         if caption_list:
             axes[i].set_title(str(caption_list[i]), fontsize=8)
