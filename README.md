@@ -25,15 +25,13 @@ The framework was developed and tested on WSIs of NBT resources from multiple co
 
 
 ## 3. WSI pre-processing
+BreastAgeNet takes a refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
+
+The framework performs foreground tissue detection, patch tessellation and tissue type classification, which generates a `_TC_512_patch_all.csv` file that contains the coordinates of patches and their tissue classification results for each slide.
 
 <p align="center">
     <img src="Docs/pre-processing.png" width="90%">
 </p>
-
-
-BreastAgeNet takes a refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
-
-The framework performs foreground tissue detection, patch tessellation and tissue type classification, which generates a `_TC_512_patch_all.csv` file that contains the coordinates of patches and their tissue classification results for each slide.
 
 
 
