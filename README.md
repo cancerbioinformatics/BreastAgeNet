@@ -246,7 +246,6 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
 ```
 
 
-
 ### 5.1.5 _BreastAgeNet_ a single slide testing
 
 Here is an example in python:
@@ -277,40 +276,94 @@ chmod +x run_jupyter.sh
 Then, please follow the instructions and launch the Jupyter Lab. The notebooks are available in `/app/BreastAgeNet/notebooks`
 
 
+
 ### 5.2 Run `breastagenet` container in an non-interactive mode
 
-```
 # 1) feature extraction
+```
 singularity exec --nv \
-  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app  \
+  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
   --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
   ./breastagenet_latest.sif \
-  conda run -n breastagenet python /app/BreastAgeNet/extractFeatures.py \
+  bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && python /app/BreastAgeNet/extractFeatures.py \
     --model phikon \
     --stain augmentation \
     --root /project \
     --dataset KHP_RM \
     --image_type WSI \
     --batch_size 16 \
-    --num_workers 8
-
+    --num_workers 8"
+```
 
 # 2) 5-fold CV training
-
-
+```
+singularity exec --nv \
+  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
+  --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
+  ./breastagenet_latest.sif \
+  bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && cd /project && \
+  CUDA_VISIBLE_DEVICES=0 python /app/BreastAgeNet/main.py \
+  ++task=train_cv \
+  ++clinic_path=/project/Metadata/train_NR_clean.csv \
+  ++FEATURES=/project/FEATUREs \
+  ++resFolder=/project/RESULTs/main \
+  ++TC_epi=0.9 \
+  ++bag_size=250 \
+  ++model_name=UNI \
+  ++attention=MultiHeadAttention"
+```
 
 # 3) full dataset training
-
-
+```
+singularity exec --nv \
+  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
+  --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
+  ./breastagenet_latest.sif \
+  bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && cd /project && \
+    CUDA_VISIBLE_DEVICES=0 python /app/BreastAgeNet/main.py \
+    ++task=test_full \
+    ++clinic_path=/project/Metadata/test_NR_clean.csv \
+    ++FEATURES=/project/FEATUREs \
+    ++resFolder=/project/RESULTs/main \
+    ++TC_epi=0.9 \
+    ++bag_size=250 \
+    ++model_name=UNI \
+    ++attention=MultiHeadAttention \
+    ++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt"
+```
 
 # 4) full dataset testing
-
+```
+singularity exec --nv \
+  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
+  --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
+  ./breastagenet_latest.sif \
+  bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && cd /project && \
+    CUDA_VISIBLE_DEVICES=0 python /app/BreastAgeNet/main.py \
+    ++task=test_full \
+    ++clinic_path=/project/Metadata/test_NR_clean.csv \
+    ++FEATURES=/project/FEATUREs \
+    ++resFolder=/project/RESULTs/main \
+    ++TC_epi=0.9 \
+    ++bag_size=250 \
+    ++model_name=UNI \
+    ++attention=MultiHeadAttention \
+    ++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt"
+```
 
 
 
 # 5) Jupyter notebook visualisation
-
-
+```
+singularity exec --nv \
+--bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
+./breastagenet_latest.sif \
+bash -c 'source /opt/conda/etc/profile.d/conda.sh && \
+conda activate breastagenet && \
+cd /app/BreastAgeNet && \
+python -m ipykernel install --user --name=breastagenet --display-name="breastagenet" && \
+chmod +x run_jupyter.sh && \
+./run_jupyter.sh'
 ```
 
 
