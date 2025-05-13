@@ -321,15 +321,14 @@ singularity exec --nv \
   ./breastagenet_latest.sif \
   bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && cd /project && \
     CUDA_VISIBLE_DEVICES=0 python /app/BreastAgeNet/main.py \
-    ++task=test_full \
-    ++clinic_path=/project/Metadata/test_NR_clean.csv \
+    ++task=train_full \
+    ++clinic_path=/project/Metadata/train_NR_clean.csv \
     ++FEATURES=/project/FEATUREs \
     ++resFolder=/project/RESULTs/main \
     ++TC_epi=0.9 \
     ++bag_size=250 \
     ++model_name=UNI \
-    ++attention=MultiHeadAttention \
-    ++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt"
+    ++attention=MultiHeadAttention
 ```
 
 ### 5.2.4 full dataset testing
