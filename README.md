@@ -23,27 +23,42 @@ The framework was developed and tested on WSIs of NBT resources from multiple co
 </p>
 
 
-The data is organised under the `root` directory as follows:
+
+## 3. WSI pre-processing
+
+<p align="center">
+    <img src="Docs/pre-processing.png" width="90%">
+</p>
+
+
+BreastAgeNet takes a refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
+
+The framework performs foreground tissue detection, patch tessellation and tissue type classification, which generates a `_TC_512_patch_all.csv` file that contains the coordinates of patches and their tissue classification results for each slide.
+
+
+
+## 4. _BreastAgeNet_ implementation
+
+The implementation can largely be broken down into the following four steps:
+- Feature extraction
+- _BreastAgeNet_ training
+- _BreastAgeNet_ testing
+- Visualisation
+
+For these implementations, install BreastAgeNet under the root folder:
 ```
-/path/to/root/
-├── Metadata/
-│   ├── train_NR.csv
-│   ├── test_NR.csv
-│   └── test_BRCA.csv
-├── WSIs/
-│   ├── SGK/slide1.svs, ...
-│   ├── KHP/slide1.ndpi, ...
-│   ├── NKI/slide1.mrxs, ...
-│   ├── BCI/slide1.ndpi, ...
-│   └── EPFL/slide1.vsi, ...
-├── FEATUREs/
-└── RESULTs/
+cd /path/to/root
+git clone https://github.com/cancerbioinformatics/BreastAgeNet.git
+
+cd BreastAgeNet/
+conda env create -f environment.yml
+conda activate breastagenet
 ```
 
 
-## 3. [Docker](https://hub.docker.com/repository/docker/siyuan726/breastagenet/general)
+## 5. [BeastAgeNet Docker](https://hub.docker.com/repository/docker/siyuan726/breastagenet/general)
 
-BreastAgeNet supports Docker for reproducing the main figures and analysing tissue ageing ranks of user histology data. 
+BreastAgeNet supports Docker for the key implementation steps and for reproducing the main figures in the paper. 
 
 To get the Docker image:
 ```
@@ -56,23 +71,21 @@ singularity pull docker://siyuan726/breastagenet:latest
 ```
 
 
+### 5.0 Run `breastagenet` container in an interactive mode
 
-## 3. WSI pre-processing
-
-<p align="center">
-    <img src="Docs/pre-processing.png" width="90%">
-</p>
-
-
-BreastAgeNet takes a refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
-
-The framework performs foreground tissue detection, patch tessellation and tissue type classification, which generates a `_patch_all.csv` file that contains the coordinates of patches and their tissue classification results for each slide.
-
-This step yields:
+Please prepare a local `project/` folder with a structure similar to the one shown below:
 ```
-/path/to/root/
+/path/to/project/
 ├── Metadata/
+│   ├── train_NR.csv
+│   ├── test_NR.csv
+│   └── test_BRCA.csv
 ├── WSIs/
+│   ├── SGK/slide1.svs, ...
+│   ├── KHP/slide1.ndpi, ...
+│   ├── NKI/slide1.mrxs, ...
+│   ├── BCI/slide1.ndpi, ...
+│   └── EPFL/slide1.vsi, ...
 ├── FEATUREs/SGK
 │   ├──slide1
 │   |   ├── slide1_TC_512_patch_all.csv
@@ -81,60 +94,41 @@ This step yields:
 └── RESULTs/
 ```
 
-
-## 4. _BreastAgeNet_ implementation
-
-The implementation can largely be broken down into the following four steps:
-- Feature extraction
--  _BreastAgeNet_ training
-- _BreastAgeNet_ testing
-- Visualisation
-
-To get started, install BreastAgeNet under the root folder:
+Launch `breastagenet` container and map the local `project/` folder to the `/project` folder in the container:
 ```
-cd /path/to/root
-git clone https://github.com/cancerbioinformatics/BreastAgeNet.git
+singularity shell --nv \
+--bind /path/to/project:/project \
+--writable-tmpfs \
+./breastagenet_latest.sif 
+```
 
-cd BreastAgeNet/
-conda env create -f environment.yml
+Inside the container, run the following script:
+```
+source /opt/conda/etc/profile.d/conda.sh
 conda activate breastagenet
+cd /app/BreastAgeNet
 ```
 
 
-### 4.1 Feature extraction
+### 5.1 Feature extraction
 
-Based on the `_patch_all.csv` file that contains the patch information, this step randomly selects target patches to form the input bag and extracts visual features for them via pre-trained feature extractors.
+Based on the `_TC_512_patch_all.csv` file that contains the patch information, this step randomly selects target patches to form the input bag and extracts visual features for them via pre-trained feature extractors.
 
 The script supports applying pre-trained feature extractors including pre-trained ResNet50, [UNI](https://huggingface.co/MahmoodLab/UNI), [prov-gigapath](https://huggingface.co/prov-gigapath/prov-gigapath) and [phikon](https://huggingface.co/owkin/phikon);
 and stain generalisation methods including normalisation ([Reinhard](https://github.com/chia56028/Color-Transfer-between-Images)) and augmentation ([RandStainNA](https://github.com/yiqings/RandStainNA)).
 
-
 The following script shows an example of extracting features from WSI files using a single GPU: 
 ```
-export CUDA_VISIBLE_DEVICES=0
-python extractFeatures.py \
+CUDA_VISIBLE_DEVICES=0 python extractFeatures.py \
 --model UNI \
 --stain augmentation \
---root /path/to/root \
---dataset KHP \
+--root /project \
+--dataset NKI \   # change this to your dataset name
 --image_type WSI \
 --batch_size 16 \
 --num_workers 8
 ```
 
-The following script shows an example of extracting features from patch images using a single GPU: 
-```
-export CUDA_VISIBLE_DEVICES=0
-python extractFeatures.py \
---model UNI \
---stain augmentation \
---root /path/to/root \
---dataset KHP \
---image_type patch \
---patch_csv /csv/file/containing/file_path   \ # the 'file_path' column contains the absolute image path of each patch
---batch_size 16 \
---num_workers 8  
-```
 
 The following script shows an example of extracting features from WSI files using multiple GPUs: 
 ```
@@ -142,8 +136,8 @@ export CUDA_VISIBLE_DEVICES=0,1
 torchrun --nproc-per-node=2 extractFeatures.py \
 --model UNI \
 --stain augmentation \
---root /path/to/root \
---dataset KHP \
+--root /project \
+--dataset KHP \  # change this to your dataset name
 --image_type WSI \
 --batch_size 32 \
 --num_workers 8  
@@ -152,7 +146,7 @@ torchrun --nproc-per-node=2 extractFeatures.py \
 
 After running all combinations of different feature extractors and stain generalisation methods, this step yields:
 ```
-prj_BreastAgeNet/
+/path/to/project/
 ├── Metadata/
 ├── WSIs/
 ├── Features/cohort
@@ -170,13 +164,8 @@ prj_BreastAgeNet/
 └── RESULTs/
 ```
 
-Note, invalid slides that either failed to obtain features or contain epithelium patches (with a confidence higher than 0.9) less than 5 were removed. 
 
-
-
-### 4.2 _BreastAgeNet_ training 
-
-**Five-fold cross-validation training**
+### 5.2 _BreastAgeNet_ 5-fold cross-validation training 
 
 We implemented 5-fold cross-validation training tuning factors, including feature extractors, attention mechanisms, tissue contents, and bag sizes. 
 
@@ -205,10 +194,9 @@ prj_BreastAgeNet/
     |   └── ...
     └── ...
 ```
-For 5-fold cross-validation results, please refer to [notebook Fig1.ipynb](notebooks/Fig1.ipynb).
 
 
-**Full dataset training**
+### 5.3 _BreastAgeNet_ full dataset training
 
 _BreastAgeNet_ was finally trained using the following script on the full train_NR dataset:
 
@@ -235,41 +223,34 @@ prj_BreastAgeNet/
 ```
 
 
-
-### Step 3. Visualisation
-Step 2.1 tSNE projection of the whole dataset
-**_BreastAgeNet_**  learns ageing-related microscopic patterns in a data-driven manner, using a multi-head self-attention mechanism to prioritize relevant patterns for accurate branch predictions. By integrating information from multiple branches, the model enhances the robustness of its predictions and provides deeper insights into the nuanced ageing-related changes in NBT. Please refer to [notebook vis_tSNE](notebooks/vis_tSNE.ipynb).
-
-Step 2.2 Attention heatmap for a single WSI
-Moreover, **_BreastAgeNet_** provides attention heatmaps that can directly visualise ageing-related spatial heterogeneity across the tissue, with this variability showing strong associations with manually annotated, age-related lobule types. Please refer to [notebook vis_attention_heatmap](notebooks/vis_attention_heatmap.ipynb)
+### 5.4 _BreastAgeNet_ full dataset testing
 
 
 
-### Step 4. External testing
-In the context of ordinal classification, where errors between adjacent classes are considered less severe than those between more distant classes, **_BreastAgeNet_** demonstrated robust performance on WSIs of NBT derived from reduction mammoplasties, with only 9% severe misclassification. With its substantiated ability to model ageing trajectories in NBT, <i>BreastAgeNet</i> has revealed deviations between expected (chronological) and observed (predicted) tissue ageing in high-risk NBT from _gBRCA1/2_ mutation carriers or breast cancer patients. For this, please implement the following:
+
+### 5.5 _BreastAgeNet_ a single slide testing
+
+
+
+### 5.6 Visualisation
+
+We provide notebooks to reproduce the main figures in the paper. To access and run the notebooks:
 
 ```
-import json
-from utils_model import *
+python -m ipykernel install \
+--user \
+--name=breastagenet \
+--display-name="breastagenet"
 
-with open("./configs/config_v1.json", "r") as f:
-    config = json.load(f)
-
-model = load_BreastAgeNet(config)
-repeats = inference(model, clinic_file, n_iteration=10, stainFunc="reinhard", config=config)
-output_df = get_averaged_outputs(repeats)
-output_df
+chmod +x run_jupyter.sh
+./run_jupyter.sh
 ```
+Then, please follow the instructions and launch the Jupyter Lab. The notebooks are available in `/app/BreastAgeNet/notebooks`
 
 
 
-## Docker
-**_BreastAgeNet_** offers Docker to reproduce the main figures from the paper and infer tissue ageing ranks for custom datasets.
-
-
-
-## **_BreastAgeNet_** future directions
-**_BreastAgeNet_** can identify NBT with abnormal ageing process. Taking it further, attention heatmaps can pinpoint tissue regions responsible for 'mismatched' tissue ageing predictions. This approach opens the door to techniques like spatial transcriptomics, which could further elucidate molecular abnormalities at these sites—potentially identifying early indicators of cancer initiation.
+## 6. _BreastAgeNet_ future directions
+_BreastAgeNet_ can identify NBT with an abnormal ageing process. Taking it further, attention heatmaps can pinpoint tissue regions responsible for 'mismatched' tissue ageing predictions. This approach opens the door to techniques like spatial transcriptomics, which could further elucidate molecular abnormalities at these sites—potentially identifying early indicators of cancer initiation.
 
 
 ## Acknowledgements
