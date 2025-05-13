@@ -282,7 +282,6 @@ Then, please follow the instructions and launch the Jupyter Lab. The notebooks a
 ### 5.2.1 feature extraction
 ```
 singularity exec --nv \
-  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
   --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
   ./breastagenet_latest.sif \
   bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && python /app/BreastAgeNet/extractFeatures.py \
@@ -298,7 +297,6 @@ singularity exec --nv \
 ### 5.2.2 5-fold CV training
 ```
 singularity exec --nv \
-  --bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
   --bind /scratch/prj/cb_normalbreast/prj_BreastAgeNet:/project \
   ./breastagenet_latest.sif \
   bash -c "source /opt/conda/etc/profile.d/conda.sh && conda activate breastagenet && cd /project && \
@@ -306,7 +304,7 @@ singularity exec --nv \
   ++task=train_cv \
   ++clinic_path=/project/Metadata/train_NR_clean.csv \
   ++FEATURES=/project/FEATUREs \
-  ++resFolder=/project/RESULTs/main \
+  ++resFolder=/project/Docker_test/RESULTs/main \
   ++TC_epi=0.9 \
   ++bag_size=250 \
   ++model_name=UNI \
@@ -324,7 +322,7 @@ singularity exec --nv \
     ++task=train_full \
     ++clinic_path=/project/Metadata/train_NR_clean.csv \
     ++FEATURES=/project/FEATUREs \
-    ++resFolder=/project/RESULTs/main \
+    ++resFolder=/project/Docker_test/RESULTs/main \
     ++TC_epi=0.9 \
     ++bag_size=250 \
     ++model_name=UNI \
@@ -342,25 +340,24 @@ singularity exec --nv \
     ++task=test_full \
     ++clinic_path=/project/Metadata/test_NR_clean.csv \
     ++FEATURES=/project/FEATUREs \
-    ++resFolder=/project/RESULTs/main \
+    ++resFolder=/project/Docker_test/RESULTs/main \
     ++TC_epi=0.9 \
     ++bag_size=250 \
     ++model_name=UNI \
     ++attention=MultiHeadAttention \
+    ++stainFunc=reinhard \
     ++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt"
 ```
 
 ### 5.2.5 Jupyter notebook visualisation
 ```
 singularity exec --nv \
---bind /scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet:/app \
 ./breastagenet_latest.sif \
 bash -c 'source /opt/conda/etc/profile.d/conda.sh && \
 conda activate breastagenet && \
 cd /app/BreastAgeNet && \
 python -m ipykernel install --user --name=breastagenet --display-name="breastagenet" && \
-chmod +x run_jupyter.sh && \
-./run_jupyter.sh'
+bash run_jupyter.sh'
 ```
 
 
