@@ -12,7 +12,7 @@
 
 
 <p align="center">
-    <img src="Docs/BreastAgeNet.png" width="90%">
+    <img src="Docs/BreastAgeNet.png" width="80%">
 </p>
 
 
@@ -22,7 +22,7 @@ The framework was developed and tested on WSIs of NBT resources from multiple co
 
 
 <p align="center">
-    <img src="Docs/cohort.png" width="90%"> 
+    <img src="Docs/cohort.png" width="75%"> 
 </p>
 
 
