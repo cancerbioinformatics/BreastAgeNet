@@ -2,6 +2,7 @@
 # Description: Launch Jupyter Lab on HPC and print SSH tunnel instructions.
 
 # --- Set critical variables
+export CUDA_VISIBLE_DEVICES=0
 readonly IPADDRESS=$(hostname -I | tr ' ' '\n' | grep '10.211.4.')
 readonly PORT=$(python -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()')
 
@@ -23,4 +24,4 @@ To terminate the notebook later:
 END
 
 # --- Launch Jupyter Lab
-jupyter lab --port=${PORT} --ip=${IPADDRESS} --no-browser --notebook-dir=/scratch/prj/cb_histology_data/Siyuan/Docker_test/breastagenet/BreastAgeNet
+jupyter lab --port=${PORT} --ip=${IPADDRESS} --no-browser --notebook-dir=/app/BreastAgeNet
