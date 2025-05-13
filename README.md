@@ -10,13 +10,16 @@
 
 **_BreastAgeNet_** is a computational pathology (CPath) framework, incorporating a multi-branch multiple-instance learning (MIL) architecture to capture ordinal age-related histological alterations and designed to predict tissue ageing ranks in NBT from WSI. 
 
+
 <p align="center">
     <img src="Docs/BreastAgeNet.png" width="90%">
 </p>
 
 
+
 ## 2. Dataset Overview
 The framework was developed and tested on WSIs of NBT resources from multiple cohorts, including the King's Health Partners Cancer Biobank (KHP) in London; the Netherlands Cancer Institute (NKI) in Amsterdam; the Barts Cancer Institute (BCI) in London; the École Polytechnique Fédérale de Lausanne (EPFL) in Lausanne, Switzerland; and the publicly available Susan G. Komen Tissue Bank (SGK).
+
 
 <p align="center">
     <img src="Docs/cohort.png" width="90%"> 
@@ -28,6 +31,7 @@ The framework was developed and tested on WSIs of NBT resources from multiple co
 BreastAgeNet takes a refined bag of patches from each WSI as input. For this, we pre-processed each WSI using our [_NBT-Classifier_](https://github.com/cancerbioinformatics/NBT-Classifier) framework. 
 
 The framework performs foreground tissue detection, patch tessellation and tissue type classification, which generates a `_TC_512_patch_all.csv` file that contains the coordinates of patches and their tissue classification results for each slide.
+
 
 <p align="center">
     <img src="Docs/pre-processing.png" width="90%">
