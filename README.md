@@ -56,7 +56,7 @@ conda activate breastagenet
 ```
 
 
-## 5. [BeastAgeNet Docker](https://hub.docker.com/repository/docker/siyuan726/breastagenet/general)
+## 5. BeastAgeNet Docker [link](https://hub.docker.com/repository/docker/siyuan726/breastagenet/general)
 
 BreastAgeNet supports Docker for the key implementation steps and for reproducing the main figures in the paper. 
 
@@ -129,7 +129,6 @@ CUDA_VISIBLE_DEVICES=0 python extractFeatures.py \
 --num_workers 8
 ```
 
-
 The following script shows an example of extracting features from WSI files using multiple GPUs: 
 ```
 export CUDA_VISIBLE_DEVICES=0,1
@@ -142,7 +141,6 @@ torchrun --nproc-per-node=2 extractFeatures.py \
 --batch_size 32 \
 --num_workers 8  
 ```
-
 
 After running all combinations of different feature extractors and stain generalisation methods, this step yields:
 ```
@@ -171,12 +169,15 @@ We implemented 5-fold cross-validation training tuning factors, including featur
 
 The following script shows an example of training a MultiHeadAttention-based _BreastAgeNet_ on a bag of UNI features of 250 random epithelium patches that were classified with >0.9 probability:
 ```
-python main.py \
-+
-+TC_epi=0.9 \
-+bag_size=250 \
-+model_name="UNI" \
-+attention="MultiHeadAttention"
+CUDA_VISIBLE_DEVICES=0 python main.py \
+++task=train_cv  \
+++clinic_path=/project/Metadata/train_NR_clean.csv \
+++FEATURES=/project/FEATUREs  \
+++resFolder=/project/RESULTs/main  \
+++TC_epi=0.9  \
+++bag_size=250  \
+++model_name=UNI  \
+++attention=MultiHeadAttention
 ```
 
 This step yields:
@@ -201,13 +202,16 @@ prj_BreastAgeNet/
 _BreastAgeNet_ was finally trained using the following script on the full train_NR dataset:
 
 ```
-python main.py \
-+TC_epi=0.9 \
-+bag_size=250 \
-+model_name="UNI" \
-+attention="MultiHeadAttention"
+CUDA_VISIBLE_DEVICES=0 python main.py \
+++task=train_full  \
+++clinic_path=/project/Metadata/train_NR_clean.csv  \
+++FEATURES=/project/FEATURES  \
+++resFolder=/project/RESULTs/main  \
+++TC_epi=0.9  \
+++bag_size=250  \
+++model_name=UNI  \
+++attention=MultiHeadAttention
 ```
-
 
 This step yields:
 ```
@@ -217,24 +221,46 @@ prj_BreastAgeNet/
 ├── Features/
 └── RESULTs/
     |── main/
-    │   ├── train_cv/
-    │   ├── train_full/
+    │   ├── train_full/epi0.9_UNI_250_MultiHeadAttention_full_best.pt
+    |   └── ...
     └── ...
 ```
 
 
 ### 5.4 _BreastAgeNet_ full dataset testing
 
+Here is an example:
+```
+CUDA_VISIBLE_DEVICES=0 python main.py \
+++task=test_full \
+++clinic_path=/project/Metadata/test_NR_clean.csv \
+++FEATURES=/project/FEATURES \
+++resFolder=/project/RESULTs/main \
+++TC_epi=0.9 \
+++bag_size=250 \
+++model_name=UNI \
+++attention=MultiHeadAttention \
+++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt 
+```
 
 
 
 ### 5.5 _BreastAgeNet_ a single slide testing
 
+Here is an example in python:
+```
+from utils.utils_model import test_single_slide
+
+wsi_path = "/app/example_data/WSIs/KHP_NR/19001626_FPE_3.ndpi"
+age_group = 0
+patch_info = "/app/example_data/FEATUREs/19001626_FPE_3/19001626_FPE_3_TC_512_patch_all.csv"
+test_single_slide(wsi_path, patch_info, age_group)
+```
 
 
 ### 5.6 Visualisation
 
-We provide notebooks to reproduce the main figures in the paper. To access and run the notebooks:
+We provide notebooks to reproduce the main figures in the paper. To access and run the notebooks, please run the following:
 
 ```
 python -m ipykernel install \
@@ -245,6 +271,7 @@ python -m ipykernel install \
 chmod +x run_jupyter.sh
 ./run_jupyter.sh
 ```
+
 Then, please follow the instructions and launch the Jupyter Lab. The notebooks are available in `/app/BreastAgeNet/notebooks`
 
 
