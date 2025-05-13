@@ -261,7 +261,7 @@ test_single_slide(wsi_path, patch_info, age_group)
 
 ### 5.1.6 Visualisation
 
-We provide notebooks to reproduce the main figures in the paper. To access and run the notebooks, please run the following:
+We provide [notebooks](./notebooks) to reproduce the main figures in the paper. To access and run the notebooks, please run the following:
 
 ```
 python -m ipykernel install \
