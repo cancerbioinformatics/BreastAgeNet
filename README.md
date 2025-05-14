@@ -99,9 +99,9 @@ Please prepare a local `project/` folder with a structure similar to the one sho
 Launch `breastagenet` container and map the local `project/` folder to the `/project` folder in the container:
 ```
 singularity shell --nv \
---bind /path/to/project:/project \
---writable-tmpfs \
-./breastagenet_latest.sif
+  --bind /path/to/project:/project \
+  --writable-tmpfs \
+  ./breastagenet_latest.sif
 ```
 
 Inside the container, run the following script:
@@ -122,25 +122,25 @@ and stain generalisation methods including normalisation ([Reinhard](https://git
 The following script shows an example of extracting features from WSI files using a single GPU: 
 ```
 CUDA_VISIBLE_DEVICES=0 python extractFeatures.py \
---model UNI \
---stain augmentation \
---root /project \
---dataset NKI \
---image_type WSI \
---batch_size 16 \
---num_workers 8
+  --model UNI \
+  --stain augmentation \
+  --root /project \
+  --dataset NKI \
+  --image_type WSI \
+  --batch_size 16 \
+  --num_workers 8
 ```
 
 for using multiple GPUs: 
 ```
 CUDA_VISIBLE_DEVICES=0,1 torchrun --nproc-per-node=2 extractFeatures.py \
---model UNI \
---stain augmentation \
---root /project \
---dataset NKI \
---image_type WSI \
---batch_size 32 \
---num_workers 8  
+  --model UNI \
+  --stain augmentation \
+  --root /project \
+  --dataset NKI \
+  --image_type WSI \
+  --batch_size 32 \
+  --num_workers 8
 ```
 
 After running all combinations of different feature extractors and stain generalisation methods, this step yields:
@@ -171,14 +171,14 @@ We implemented 5-fold cross-validation training tuning factors, including featur
 The following script shows an example of training a MultiHeadAttention-based _BreastAgeNet_ on a bag of UNI features of 250 random epithelium patches that were classified with >0.9 probability:
 ```
 CUDA_VISIBLE_DEVICES=0 python main.py \
-++task=train_cv  \
-++clinic_path=/project/Metadata/train_NR_clean.csv \
-++FEATURES=/project/FEATUREs  \
-++resFolder=/project/RESULTs/main  \
-++TC_epi=0.9  \
-++bag_size=250  \
-++model_name=UNI  \
-++attention=MultiHeadAttention
+  ++task=train_cv  \
+  ++clinic_path=/project/Metadata/train_NR_clean.csv \
+  ++FEATURES=/project/FEATUREs  \
+  ++resFolder=/project/RESULTs/main  \
+  ++TC_epi=0.9  \
+  ++bag_size=250  \
+  ++model_name=UNI  \
+  ++attention=MultiHeadAttention
 ```
 
 This step yields:
@@ -204,14 +204,14 @@ _BreastAgeNet_ was finally trained using the following script on the full train_
 
 ```
 CUDA_VISIBLE_DEVICES=0 python main.py \
-++task=train_full  \
-++clinic_path=/project/Metadata/train_NR_clean.csv  \
-++FEATURES=/project/FEATUREs  \
-++resFolder=/project/RESULTs/main  \
-++TC_epi=0.9  \
-++bag_size=250  \
-++model_name=UNI  \
-++attention=MultiHeadAttention
+  ++task=train_full  \
+  ++clinic_path=/project/Metadata/train_NR_clean.csv  \
+  ++FEATURES=/project/FEATUREs  \
+  ++resFolder=/project/RESULTs/main  \
+  ++TC_epi=0.9  \
+  ++bag_size=250  \
+  ++model_name=UNI  \
+  ++attention=MultiHeadAttention
 ```
 
 This step yields:
@@ -233,16 +233,16 @@ prj_BreastAgeNet/
 Here is an example:
 ```
 CUDA_VISIBLE_DEVICES=0 python main.py \
-++task=test_full \
-++clinic_path=/project/Metadata/test_NR_clean.csv \
-++FEATURES=/project/FEATUREs \
-++resFolder=/project/Docker_test/RESULTs/main \
-++TC_epi=0.9 \
-++bag_size=250 \
-++model_name=UNI \
-++attention=MultiHeadAttention \
-++stainFunc=reinhard \
-++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt
+  ++task=test_full \
+  ++clinic_path=/project/Metadata/test_NR_clean.csv \
+  ++FEATURES=/project/FEATUREs \
+  ++resFolder=/project/Docker_test/RESULTs/main \
+  ++TC_epi=0.9 \
+  ++bag_size=250 \
+  ++model_name=UNI \
+  ++attention=MultiHeadAttention \
+  ++stainFunc=reinhard \
+  ++ckpt_pt=/app/BreastAgeNet/weights/epi0.9_UNI_250_MultiHeadAttention_full_best.pt
 ```
 
 
