@@ -297,6 +297,35 @@ ggsave(
 )
 ```
 
+# Example: permutation test for one cell type in one contrast
+cell_of_interest <- "LASP"
+contrast        <- c("<35 BRCA, concordant ageing", "<35 BRCA, accelerated ageing")
+n_perms         <- 5000  # number of permutations
+
+# 1. Subset your data
+df0 <- prop_fov_df %>%
+  filter(cell_type == cell_of_interest,
+         condition %in% contrast) %>%
+  select(FOV, fraction, condition)
+
+# 2. Compute the observed Wilcoxon W‑statistic
+obs_stat <- wilcox_test(fraction ~ condition, data = df0)$statistic
+
+# 3. Permutation loop
+perm_stats <- replicate(n_perms, {
+  shuffled <- df0 %>%
+    mutate(condition = sample(condition))    # shuffle labels
+  wilcox_test(fraction ~ condition, data = shuffled)$statistic
+})
+
+# 4. Calculate empirical p‑value
+#    Count how many permuted stats are ≥ (for one‑sided) or | | ≥ | | (two‑sided)
+perm_pval <- mean(abs(perm_stats - mean(perm_stats)) >= abs(obs_stat - mean(perm_stats)))
+
+cat("Observed W =", obs_stat, "\n")
+cat("Permutation p‑value =", perm_pval, "\n")
+
+
 ## 9. Session Info
 
 ```{r session-info}
