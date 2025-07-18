@@ -1,0 +1,226 @@
+#!/usr/bin/env Rscript
+# HBCA_pipeline.R
+# Module Scoring, Statistical Testing, Cell-Type Validation & Cohen's κ
+# Author: fsumayyamohamed
+# Date: 2025-07-18
+# License: MIT
+# Description: Pipeline for computing HBCA gene module scores across multiple samples,
+# performing statistical comparisons, and validating cell-type annotations via label transfer,
+# SCINA, and scType methods.
+
+# ==== I) Parse command-line arguments =====================================
+suppressPackageStartupMessages(library(optparse))
+
+option_list <- list(
+  make_option(c("-i", "--input_dir"), type="character", default=NULL,
+              help="Directory containing split Seurat .RDS files", metavar="path"),
+  make_option(c("-o", "--output_dir"), type="character", default=".",
+              help="Directory for output files [default: %default]", metavar="path"),
+  make_option(c("-r", "--ref_rds"), type="character", default=NULL,
+              help="Annotated reference RDS for label transfer", metavar="file"),
+  make_option(c("-q", "--query_id"), type="character", default=NULL,
+              help="Sample ID for cell-type validation query", metavar="ID")
+)
+
+opt <- parse_args(OptionParser(option_list=option_list))
+if (is.null(opt$input_dir) || is.null(opt$ref_rds) || is.null(opt$query_id)) {
+  print_help(OptionParser(option_list=option_list))
+  stop("--input_dir, --ref_rds, and --query_id are required.", call.=FALSE)
+}
+
+# Create output directory if needed
+if (!dir.exists(opt$output_dir)) dir.create(opt$output_dir, recursive=TRUE)
+
+# ==== II) Load libraries ==================================================
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(dplyr)
+  library(tidyr)
+  library(ggplot2)
+  library(patchwork)
+  library(rstatix)
+  library(irr)
+  library(SCINA)
+  library(scType)
+})
+
+# ==== III) Define parameters ==============================================
+# Map sample IDs to conditions
+condition_map <- c(
+  "22003431" = "<35 BRCA, accelerated ageing",
+  "21001338" = "<35 BRCA, accelerated ageing",
+  "22002312" = "<35 BRCA, accelerated ageing",
+  "22000466" = "<35 BRCA, concordant ageing",
+  "22002145" = "<35 BRCA, concordant ageing",
+  "22002462" = "<35 BRCA, concordant ageing"
+)
+
+# HBCA gene modules
+gene_modules <- list(
+  LASP2 = c("SLPI","ALDH1A3","KIT","MMP7","KRT8","WFDC2","LCN2","MUC1","TSPAN8","CXCL17"),
+  LHS2  = c("ESR1","PGR","FOXA1","AREG","GREB1","TFF1","BCL2","CCND1","MSMB","IGFBP5"),
+  BMYO1 = c("KRT5","KRT14","ACTA2","TP63","MYLK","CNN1","TAGLN","TPM2","VCL","TIMP3")
+)
+
+# SCINA markers
+scina_markers <- list(
+  Epithelial    = c("KRT8","EPCAM"),
+  Myoepithelial = c("KRT5","TP63"),
+  B_cells       = c("CD19","MS4A1"),
+  T_cells       = c("CD3D","CD3E"),
+  Endothelial   = c("PECAM1","VWF"),
+  Fibroblast    = c("DCN","COL1A1")
+)
+
+# Input and output paths
+input_dir      <- opt$input_dir
+output_dir     <- opt$output_dir
+ref_rds        <- opt$ref_rds
+query_id       <- opt$query_id
+query_rds      <- file.path(input_dir, paste0("seurat_", query_id, ".RDS"))
+
+out_scores_csv <- file.path(output_dir, "mean_HBCA_module_scores_by_celltype.csv")
+out_stats_csv  <- file.path(output_dir, "HBCA_module_score_stats.csv")
+out_boxplot    <- file.path(output_dir, "HBCA_module_boxplots.pdf")
+out_umap_pdf   <- file.path(output_dir, "validation_umaps.pdf")
+
+# ==== IV) Module scoring ================================================
+compute_module_scores <- function() {
+  message("[1/5] Module scoring across samples...")
+  rds_files  <- list.files(input_dir, "^seurat_\\d+\\.RDS$", full.names=TRUE)
+  sample_ids <- sub("^.*seurat_(\\d+)\\.RDS$", "\\1", basename(rds_files))
+  keep       <- sample_ids %in% names(condition_map)
+  rds_files  <- rds_files[keep]
+  sample_ids <- sample_ids[keep]
+
+  summary_list <- lapply(seq_along(rds_files), function(i) {
+    sid       <- sample_ids[i]
+    cond      <- condition_map[sid]
+    so        <- readRDS(rds_files[i])
+    so$condition <- cond
+
+    for (mod in names(gene_modules)) {
+      genes <- intersect(gene_modules[[mod]], rownames(so))
+      so <- AddModuleScore(so, features=list(genes), name=mod)
+    }
+
+    df <- so@meta.data %>%
+      transmute(
+        sample_id = sid,
+        condition,
+        cell_type,
+        LASP2 = LASP21,
+        LHS2  = LHS21,
+        BMYO1 = BMYO11
+      ) %>%
+      group_by(sample_id, condition, cell_type) %>%
+      summarise(across(c(LASP2, LHS2, BMYO1), mean, na.rm=TRUE), .groups="drop")
+    return(df)
+  })
+
+  summary_df <- bind_rows(summary_list)
+  write.csv(summary_df, out_scores_csv, row.names=FALSE)
+  message("    → Saved scores: ", out_scores_csv)
+  return(summary_df)
+}
+
+# ==== V) Statistics & Boxplots ==========================================
+run_statistics <- function(summary_df) {
+  message("[2/5] Statistical tests & boxplots...")
+  long_df <- summary_df %>% pivot_longer(
+    cols = names(gene_modules), names_to = "module", values_to = "score"
+  )
+  stat_res <- long_df %>%
+    group_by(cell_type, module) %>%
+    wilcox_test(score ~ condition) %>%
+    adjust_pvalue(method = "BH") %>%
+    add_significance("p.adj")
+
+  write.csv(stat_res, out_stats_csv, row.names=FALSE)
+  message("    → Saved stats: ", out_stats_csv)
+
+  # Boxplot
+  pdf(out_boxplot, width=12, height=6)
+  ggplot(long_df, aes(x=cell_type, y=score, fill=condition)) +
+    geom_boxplot(position=position_dodge(0.8), outlier.shape=NA) +
+    geom_jitter(position=position_jitterdodge(0.2, 0.8), size=0.6, alpha=0.6) +
+    facet_wrap(~module, scales="free_y") +
+    stat_pvalue_manual(stat_res, label="p.adj.signif", tip.length=0.02, hide.ns=TRUE) +
+    theme_minimal(base_size=13) +
+    theme(axis.text.x = element_text(angle=45, hjust=1)) +
+    labs(x="Cell type", y="Mean Module Score",
+         title="HBCA Module Scores by Cell Type & Condition")
+  dev.off()
+  message("    → Saved boxplots: ", out_boxplot)
+}
+
+# ==== VI) Cell-Type Validation ==========================================
+validate_celltypes <- function() {
+  message("[3/5] Cell-type validation for sample ", query_id)
+  query <- readRDS(query_rds)
+  query$orig <- query$cell_type
+
+  # A) Seurat label transfer
+  message("    - Seurat label transfer...")
+  ref <- readRDS(ref_rds) %>%
+    NormalizeData() %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose=FALSE)
+  query <- query %>% NormalizeData() %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA(verbose=FALSE)
+
+  anchors <- FindTransferAnchors(reference=ref, query=query, dims=1:30)
+  pred <- TransferData(anchorset=anchors, refdata=ref@meta.data$cell_type, dims=1:30)
+  query <- AddMetaData(query, metadata=pred)
+  query$LT <- query$predicted.id
+
+  # B) SCINA
+  message("    - SCINA classification...")
+  sce <- as.SingleCellExperiment(query, assay="RNA")
+  scina_out <- SCINA(assay(sce, "counts"), scina_markers,
+                     max_iter=100, convergence_n=10, sensitivity_cutoff=0.9)
+  query$SCINA <- scina_out$cell_labels
+
+  # C) scType
+  message("    - scType classification...")
+  data(celltaxa_human)
+  sctype_out <- scType(es.max = as.matrix(GetAssayData(query, "data")),
+                        scType_ref = celltaxa_human, clusterCols = FALSE)
+  query$scType <- sctype_out$sc.type1
+
+  return(query)
+}
+
+# ==== VII) Cohen's κ & UMAPs ==============================================
+compute_kappa_and_umaps <- function(query_obj) {
+  message("[4/5] Computing Cohen's κ...")
+  ratings <- query_obj@meta.data %>% select(orig, LT, SCINA, scType)
+  kappas <- sapply(c("LT","SCINA","scType"), function(method) {
+    irr::kappa2(ratings[, c("orig", method)])$value
+  })
+  names(kappas) <- c("LabelTransfer","SCINA","scType")
+  print(kappas)
+
+  # UMAP comparison
+  message("[5/5] Generating UMAP comparison plots...")
+  if (!"umap" %in% names(query_obj@reductions)) {
+    query_obj <- RunUMAP(query_obj, dims=1:30, verbose=FALSE)
+  }
+  pdf(out_umap_pdf, width=14, height=4)
+  plots <- lapply(c("orig","LT","SCINA","scType"), function(field) {
+    ggplot2::DimPlot(query_obj, group.by = field, label = FALSE) + ggtitle(field)
+  })
+  print(patchwork::wrap_plots(plots, nrow=1) & theme(legend.position="bottom"))
+  dev.off()
+  message("    → Saved UMAPs: ", out_umap_pdf)
+}
+
+# ==== Main =================================================================
+main <- function() {
+  df_scores <- compute_module_scores()
+  run_statistics(df_scores)
+  query <- validate_celltypes()
+  compute_kappa_and_umaps(query)
+  message("Pipeline complete. Session info:")
+  print(sessionInfo())
+}
+
+# Execute main
+main()
