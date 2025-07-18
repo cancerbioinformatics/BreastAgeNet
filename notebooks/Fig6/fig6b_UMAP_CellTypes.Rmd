@@ -1,15 +1,44 @@
-```{r}
-# 1. Load your Seurat object (modify path as needed)
-seu <- readRDS("/Volumes/PortableSSD/NORMAL_STUDY/seuratobject_backups/seuratObject_22002145_19001625_17063451.RDS")
-```
+---
+title: "Grouping & Marker Detection Analysis"
+author: "fsumayyamohamed"
+date: "18.07.25"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+params:
+  seurat_rds:      "data/seuratObject.rds"
+  out_fig_png:     "figures/umap_grouped_celltypes.png"
+  out_fig_pdf:     "figures/umap_grouped_celltypes.pdf"
+  markers_csv:     "figures/group_markers.csv"
+---
 
-```{r}
+```{r setup, include=FALSE}
+# Load libraries and set chunk options
+library(here)
 library(dplyr)
 library(Seurat)
 library(ComplexHeatmap)
 library(circlize)
+library(ggplot2)
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+```
 
-# 1) Recode your metadata into grouped cell types
+## 1. Load Data
+
+```{r load-data}
+# Read Seurat object from relative path
+seu <- readRDS(here(params$seurat_rds))
+```
+
+## 2. Recode Metadata into Grouped Cell Types
+
+```{r recode-metadata}
+# Define mapping from original clusters to grouped types
 group_map <- c(
   "Mature.Luminal"                = "LHS",
   "Luminal.Progenitors"           = "LASP",
@@ -39,214 +68,102 @@ group_map <- c(
   "PVL_Immature.s2"               = "Periovascular-like",
   "PVL.Differentiated.s3"         = "Periovascular-like"
 )
-
-seu <- seu %>% 
-  AddMetaData(
-    metadata = recode(
-      seu@meta.data$RNA_fathima_Cell.Typing.InSituType.1_1_clusters,
-      !!!group_map,
-      .default = "Other"
-    ),
-    col.name = "cell_type_group"
-  )
+# Add grouped cell type metadata
+seu <- AddMetaData(
+  seu,
+  metadata = recode(
+    seu@meta.data$RNA_fathima_Cell.Typing.InSituType.1_1_clusters,
+    !!!group_map,
+    .default = "Other"
+  ),
+  col.name = "cell_type_group"
+)
 ```
 
-```{r}
-# 2) Switch identities to your grouped types
+## 3. Set Identities and Find Markers
+
+```{r markers}
+# Use the new grouping as identities
 Idents(seu) <- seu@meta.data$cell_type_group
-```
 
-```{r}
-# 3) Find markers for each grouped type
-#    Only keep genes with positive log‐fold change
+# Find cluster markers (only positive log-fold changes)
 group_markers <- FindAllMarkers(
   seu,
-  assay         = "RNA",
-  slot          = "data",           # log–normalized counts
-  only.pos      = TRUE,
-  logfc.threshold = 0.25,
-  min.pct       = 0.10
-)
-```
-
-```{r}
-library(Seurat)
-library(ggplot2)
-
-# 1) Make sure you’ve normalized and set variable features
-seu <- NormalizeData(seu)  
-
-# Pick ~2,000 highly variable genes (VST is a good default)
-seu <- FindVariableFeatures(
-  seu,
-  selection.method = "vst",
-  nfeatures        = 2000
+  assay            = "RNA",
+  slot             = "data",
+  only.pos         = TRUE,
+  logfc.threshold  = 0.25,
+  min.pct          = 0.10
 )
 
-# 2) Scale only those variable features
-seu <- ScaleData(
-  seu,
-  features = VariableFeatures(seu)
-)
-
-# 3) Run PCA on the variable features
-seu <- RunPCA(
-  seu,
-  features = VariableFeatures(seu),
-  npcs     = 30,
-  verbose  = FALSE
-)
-
-# 4) Run UMAP on the first 20 PCs
-seu <- RunUMAP(
-  seu,
-  dims    = 1:20,
-  verbose = FALSE
-)
-
-# 5) Now set your grouped identity and plot
-Idents(seu) <- "cell_type_group"
-
-p_umap <- DimPlot(
-  seu,
-  reduction = "umap",
-  label     = TRUE,
-  label.size= 4,
-  pt.size   = 0.5
-) +
-  ggtitle("UMAP of grouped cell types") +
-  theme_minimal(base_size = 14)
-
-# 6) (Optional) save it
-ggsave(
-  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes3.png",
-  plot   = p_umap,
-  width  = 8, height = 6,
-  units  = "in", dpi = 300,
-  bg     = "white"
-)
-
-p_umap
-```
-
-```{r}
-library(Seurat)
-library(ggplot2)
-
-# 1) Make sure you’ve normalized and set variable features
-seu <- NormalizeData(seu)  
-
-# Pick ~2,000 highly variable genes (VST is a good default)
-seu <- FindVariableFeatures(
-  seu,
-  selection.method = "vst",
-  nfeatures        = 2000
-)
-
-# 2) Scale only those variable features
-seu <- ScaleData(
-  seu,
-  features = VariableFeatures(seu)
-)
-
-# 3) Run PCA on the variable features
-seu <- RunPCA(
-  seu,
-  features = VariableFeatures(seu),
-  npcs     = 30,
-  verbose  = FALSE
-)
-
-# 4) Run UMAP on the first 20 PCs
-seu <- RunUMAP(
-  seu,
-  dims    = 1:20,
-  verbose = FALSE
-)
-
-# 5) Define your custom colours (named by your factor levels)
-my_cols <- c(
-  "LASP"                    = "#3d7822",
-  "LHS"                     = "#8fbc8f",
-  "Myoepithelial"           = "#bc255c",
-  "Endothelial"             = "#cc7d00",
-  "Periovascular-like"      = "#f9d057",
-  "B Cells / Plasma"        = "#4393c3",
-  "Fibroblasts"             = "#193773",
-  "Myeloid"                 = "#708090",
-  "T Cells"                 = "#87CEEB"
-)  # <-- no comma after the last entry
-
-# 6) Make sure the names exactly match your Idents levels
-levels(Idents(seu))
-# if they differ (e.g. “T cells” vs “T Cells”), either rename your vector or recode your factor
-
-# 7) Plot with your custom palette
-p_umap <- DimPlot(
-  seu,
-  reduction = "umap",
-  cols      = my_cols,
-  label     = TRUE,
-  label.size= 4,
-  pt.size   = 0.5
-) +
-  ggtitle("UMAP of grouped cell types") +
-  theme_minimal(base_size = 14)
-
-# 8) Save (optional)
-ggsave(
-  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes_coloured.png",
-  plot   = p_umap,
-  width  = 8, height = 6,
-  units  = "in", dpi = 300,
-  bg     = "white"
-)
-
-# 9) Display
-p_umap
-```
-
-```{r}
-# 7) Plot with your custom palette
-p_umap <- DimPlot(
-  seu,
-  reduction = "umap",
-  cols      = my_cols,
-  label     = TRUE,
-  label.size= 4,
-  pt.size   = 2.0
-) +
-  ggtitle("UMAP of grouped cell types") +
-  theme_minimal(base_size = 14)
-
-# 8) Save (optional)
-ggsave(
-  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes_coloured3.pdf",
-  plot   = p_umap,
-  width  = 8, height = 6,
-  units  = "in", dpi = 300,
-  bg     = "white"
-)
-
-# 9) Display
-p_umap
-```
-
-```{r}
-# 3) Save UMAP as PDF
-ggsave(
-  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes_coloured.pdf",
-  plot   = p_umap,
-  width  = 8, height = 6,
-  units  = "in", dpi = 300,
-  bg     = "white"
-)
-```
-
-```{r}
-# 5) Save markers to CSV
+# Save markers to CSV
 write.csv(
   group_markers,
-  "/Volumes/PortableSSD/NORMAL_STUDY/figures/group_markers_by_celltype.csv",
+  here(params$markers_csv),
   row.names = FALSE
 )
+```
+
+## 4. Dimensionality Reduction & UMAP Visualization
+
+```{r umap-plot}
+# Normalize, find variable features, scale, PCA, and UMAP
+seu <- NormalizeData(seu)
+seu <- FindVariableFeatures(seu, selection.method = "vst", nfeatures = 2000)
+seu <- ScaleData(seu, features = VariableFeatures(seu))
+seu <- RunPCA(seu, features = VariableFeatures(seu), npcs = 30, verbose = FALSE)
+seu <- RunUMAP(seu, dims = 1:20, verbose = FALSE)
+
+# Define custom colors for each group
+my_cols <- c(
+  "LASP"               = "#3d7822",
+  "LHS"                = "#8fbc8f",
+  "Myoepithelial"      = "#bc255c",
+  "Endothelial"        = "#cc7d00",
+  "Periovascular-like" = "#f9d057",
+  "B Cells / Plasma"   = "#4393c3",
+  "Fibroblasts"        = "#193773",
+  "Myeloid"            = "#708090",
+  "T Cells"            = "#87CEEB"
+)
+
+# Plot UMAP with labels and custom palette
+Idents(seu) <- "cell_type_group"
+p_umap <- DimPlot(
+  seu,
+  reduction = "umap",
+  cols      = my_cols,
+  label     = TRUE,
+  label.size= 4,
+  pt.size   = 0.5
+) +
+  ggtitle("UMAP of Grouped Cell Types") +
+  theme_minimal(base_size = 14)
+
+# Save as PNG
+ggsave(
+  here(params$out_fig_png),
+  plot  = p_umap,
+  width = 8, height = 6,
+  units = "in", dpi = 300,
+  bg    = "white"
+)
+
+# Save as PDF
+ggsave(
+  here(params$out_fig_pdf),
+  plot  = p_umap,
+  width = 8, height = 6,
+  units = "in", dpi = 300,
+  bg    = "white"
+)
+
+# Display plot
+p_umap
+```
+
+## 5. Session Information
+
+```{r session-info}
+# Record session info for reproducibility
+sessionInfo()
