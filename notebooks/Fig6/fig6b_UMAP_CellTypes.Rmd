@@ -1,0 +1,252 @@
+```{r}
+# 1. Load your Seurat object (modify path as needed)
+seu <- readRDS("/Volumes/PortableSSD/NORMAL_STUDY/seuratobject_backups/seuratObject_22002145_19001625_17063451.RDS")
+```
+
+```{r}
+library(dplyr)
+library(Seurat)
+library(ComplexHeatmap)
+library(circlize)
+
+# 1) Recode your metadata into grouped cell types
+group_map <- c(
+  "Mature.Luminal"                = "LHS",
+  "Luminal.Progenitors"           = "LASP",
+  "Myoepithelial"                 = "Myoepithelial",
+  "Cancer.LumA.SC"                = "LASP",
+  "Cancer.Cycling"                = "LASP",
+  "Endothelial.ACKR1"             = "Endothelial",
+  "Endothelial.CXCL12"            = "Endothelial",
+  "Endothelial.Lymphatic.LYVE1"   = "Endothelial",
+  "Endothelial.RGS5"              = "Endothelial",
+  "CAFs.MSC.iCAF-like.s1"         = "Fibroblasts",
+  "CAFs.MSC.iCAF-like.s2"         = "Fibroblasts",
+  "CAFs.Transitioning.s3"         = "Fibroblasts",
+  "CAFs.myCAF.like.s4"            = "Fibroblasts",
+  "CAFs.myCAF.like.s5"            = "Fibroblasts",
+  "undefined"                     = "Fibroblasts",
+  "Myeloid_c10_Macrophage_1_EGR1" = "Myeloid",
+  "Cycling_Myeloid"               = "Myeloid",
+  "Myeloid_c11_cDC2_CD1C"         = "Myeloid",
+  "Myeloid_c2_LAM2_APOE"          = "Myeloid",
+  "Myeloid_c3_cDC1_CLEC9A"        = "Myeloid",
+  "Myeloid_c4_DCs_pDC_IRF7"       = "Myeloid",
+  "T_cells_c11_MKI67"             = "T Cells",
+  "B.cells.Memory"                = "B Cells / Plasma",
+  "Plasmablasts"                  = "B Cells / Plasma",
+  "PVL.Immature.s1"               = "Periovascular-like",
+  "PVL_Immature.s2"               = "Periovascular-like",
+  "PVL.Differentiated.s3"         = "Periovascular-like"
+)
+
+seu <- seu %>% 
+  AddMetaData(
+    metadata = recode(
+      seu@meta.data$RNA_fathima_Cell.Typing.InSituType.1_1_clusters,
+      !!!group_map,
+      .default = "Other"
+    ),
+    col.name = "cell_type_group"
+  )
+```
+
+```{r}
+# 2) Switch identities to your grouped types
+Idents(seu) <- seu@meta.data$cell_type_group
+```
+
+```{r}
+# 3) Find markers for each grouped type
+#    Only keep genes with positive log‐fold change
+group_markers <- FindAllMarkers(
+  seu,
+  assay         = "RNA",
+  slot          = "data",           # log–normalized counts
+  only.pos      = TRUE,
+  logfc.threshold = 0.25,
+  min.pct       = 0.10
+)
+```
+
+```{r}
+library(Seurat)
+library(ggplot2)
+
+# 1) Make sure you’ve normalized and set variable features
+seu <- NormalizeData(seu)  
+
+# Pick ~2,000 highly variable genes (VST is a good default)
+seu <- FindVariableFeatures(
+  seu,
+  selection.method = "vst",
+  nfeatures        = 2000
+)
+
+# 2) Scale only those variable features
+seu <- ScaleData(
+  seu,
+  features = VariableFeatures(seu)
+)
+
+# 3) Run PCA on the variable features
+seu <- RunPCA(
+  seu,
+  features = VariableFeatures(seu),
+  npcs     = 30,
+  verbose  = FALSE
+)
+
+# 4) Run UMAP on the first 20 PCs
+seu <- RunUMAP(
+  seu,
+  dims    = 1:20,
+  verbose = FALSE
+)
+
+# 5) Now set your grouped identity and plot
+Idents(seu) <- "cell_type_group"
+
+p_umap <- DimPlot(
+  seu,
+  reduction = "umap",
+  label     = TRUE,
+  label.size= 4,
+  pt.size   = 0.5
+) +
+  ggtitle("UMAP of grouped cell types") +
+  theme_minimal(base_size = 14)
+
+# 6) (Optional) save it
+ggsave(
+  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes3.png",
+  plot   = p_umap,
+  width  = 8, height = 6,
+  units  = "in", dpi = 300,
+  bg     = "white"
+)
+
+p_umap
+```
+
+```{r}
+library(Seurat)
+library(ggplot2)
+
+# 1) Make sure you’ve normalized and set variable features
+seu <- NormalizeData(seu)  
+
+# Pick ~2,000 highly variable genes (VST is a good default)
+seu <- FindVariableFeatures(
+  seu,
+  selection.method = "vst",
+  nfeatures        = 2000
+)
+
+# 2) Scale only those variable features
+seu <- ScaleData(
+  seu,
+  features = VariableFeatures(seu)
+)
+
+# 3) Run PCA on the variable features
+seu <- RunPCA(
+  seu,
+  features = VariableFeatures(seu),
+  npcs     = 30,
+  verbose  = FALSE
+)
+
+# 4) Run UMAP on the first 20 PCs
+seu <- RunUMAP(
+  seu,
+  dims    = 1:20,
+  verbose = FALSE
+)
+
+# 5) Define your custom colours (named by your factor levels)
+my_cols <- c(
+  "LASP"                    = "#3d7822",
+  "LHS"                     = "#8fbc8f",
+  "Myoepithelial"           = "#bc255c",
+  "Endothelial"             = "#cc7d00",
+  "Periovascular-like"      = "#f9d057",
+  "B Cells / Plasma"        = "#4393c3",
+  "Fibroblasts"             = "#193773",
+  "Myeloid"                 = "#708090",
+  "T Cells"                 = "#87CEEB"
+)  # <-- no comma after the last entry
+
+# 6) Make sure the names exactly match your Idents levels
+levels(Idents(seu))
+# if they differ (e.g. “T cells” vs “T Cells”), either rename your vector or recode your factor
+
+# 7) Plot with your custom palette
+p_umap <- DimPlot(
+  seu,
+  reduction = "umap",
+  cols      = my_cols,
+  label     = TRUE,
+  label.size= 4,
+  pt.size   = 0.5
+) +
+  ggtitle("UMAP of grouped cell types") +
+  theme_minimal(base_size = 14)
+
+# 8) Save (optional)
+ggsave(
+  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes_coloured.png",
+  plot   = p_umap,
+  width  = 8, height = 6,
+  units  = "in", dpi = 300,
+  bg     = "white"
+)
+
+# 9) Display
+p_umap
+```
+
+```{r}
+# 7) Plot with your custom palette
+p_umap <- DimPlot(
+  seu,
+  reduction = "umap",
+  cols      = my_cols,
+  label     = TRUE,
+  label.size= 4,
+  pt.size   = 2.0
+) +
+  ggtitle("UMAP of grouped cell types") +
+  theme_minimal(base_size = 14)
+
+# 8) Save (optional)
+ggsave(
+  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes_coloured3.pdf",
+  plot   = p_umap,
+  width  = 8, height = 6,
+  units  = "in", dpi = 300,
+  bg     = "white"
+)
+
+# 9) Display
+p_umap
+```
+
+```{r}
+# 3) Save UMAP as PDF
+ggsave(
+  "/Volumes/PortableSSD/NORMAL_STUDY/figures/umap_grouped_celltypes_coloured.pdf",
+  plot   = p_umap,
+  width  = 8, height = 6,
+  units  = "in", dpi = 300,
+  bg     = "white"
+)
+```
+
+```{r}
+# 5) Save markers to CSV
+write.csv(
+  group_markers,
+  "/Volumes/PortableSSD/NORMAL_STUDY/figures/group_markers_by_celltype.csv",
+  row.names = FALSE
+)
